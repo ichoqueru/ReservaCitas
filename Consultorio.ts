@@ -1,4 +1,4 @@
-export class Especialidad {
+export class Consultorio {
     constructor(
         public id: number,
         public nombre: string

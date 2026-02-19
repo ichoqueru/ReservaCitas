@@ -1,0 +1,16 @@
+{
+  "compilerOptions": {
+    "target": "es2017",
+    "module": "commonjs",
+    "strict": true,
+    "esModuleInterop": true,
+    "verbatimModuleSyntax": false,
+
+    "outDir": "./dist",
+    "rootDir": "./",
+
+    "sourceMap": false,
+    "declaration": false
+  },
+  "include": ["./*.ts"]
+}
