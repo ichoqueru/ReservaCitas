@@ -1,0 +1,1 @@
+{"version":3,"file":"HistorialClinico.d.ts","sourceRoot":"","sources":["HistorialClinico.ts"],"names":[],"mappings":"AAAA,OAAO,EAAE,UAAU,EAAE,MAAM,cAAc,CAAC;AAE1C,qBAAa,gBAAgB;IACzB,OAAO,CAAC,KAAK,CAAoB;IAEjC,WAAW,CAAC,IAAI,EAAE,UAAU,GAAG,IAAI;IAInC,YAAY,IAAI,UAAU,EAAE;CAG/B"}

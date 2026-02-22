@@ -1,25 +1,77 @@
-import { SistemaCitas } from "./SistemaCitas";
-import { Especialidad } from "./Especialidad";
-import { Medico } from "./Medico";
+import * as readline from "readline";
 import { Paciente } from "./Paciente";
-import { HorarioDisponible } from "./HorarioDisponible";
+import { Medico } from "./Medico";
+import { Especialidad } from "./Especialidad";
+import { CitaMedica } from "./CitaMedica";
+import { EstadoCita } from "./EstadoCita";
+import { Notificacion } from "./Notificacion";
 
+const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout
+});
 
-const sistema = new SistemaCitas();
+// ===== Especialidades disponibles =====
+const especialidades = [
+    new Especialidad("Cardiología"),
+    new Especialidad("Dermatología"),
+    new Especialidad("Pediatría")
+];
 
-const esp = new Especialidad("Cardiología");
-const medico = new Medico(1, "Juan Pérez", esp);
+console.log("=== SISTEMA DE CITAS MÉDICAS ===\n");
 
-medico.agenda.agregarHorario(new HorarioDisponible("2026-02-20", "10:00"));
-medico.agenda.agregarHorario(new HorarioDisponible("2026-02-20", "11:00"));
+rl.question("Ingrese nombre del paciente: ", (nombre) => {
 
-const paciente = new Paciente(1, "María López");
+    const paciente = new Paciente(1, nombre);
 
-const cita = sistema.reservarCita(
-    paciente,
-    medico,
-    "2026-02-20",
-    "10:00",
-);
+    console.log("\nSeleccione una especialidad:");
 
-console.log("Estado cita:", cita.estado);
+    especialidades.forEach((esp, i) => {
+        console.log(`${i + 1}. ${esp.nombre}`);
+    });
+
+    rl.question("Opción: ", (opcionEsp) => {
+
+        const especialidad = especialidades[Number(opcionEsp) - 1];
+
+        if (!especialidad) {
+            console.log(" Especialidad inválida");
+            rl.close();
+            return;
+        }
+
+        const medico = new Medico(1, "Dr. Juan Pérez", especialidad);
+
+        const horarios = ["10:00", "11:00"];
+
+        console.log("\nHorarios disponibles:");
+
+        horarios.forEach((hora, i) => {
+            console.log(`${i + 1}. ${hora}`);
+        });
+
+        rl.question("Seleccione horario: ", (opcionHora) => {
+
+            const hora = horarios[Number(opcionHora) - 1];
+
+            if (!hora) {
+                console.log(" Horario inválido");
+                rl.close();
+                return;
+            }
+
+            const cita = new CitaMedica(
+                paciente,
+                medico,
+                especialidad,
+                "2026-02-20",
+                hora,
+                EstadoCita.RESERVADA
+            );
+
+            Notificacion.enviar(cita);
+
+            rl.close();
+        });
+    });
+});

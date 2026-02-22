@@ -1,11 +1,6 @@
 export class Paciente {
     constructor(
         public id: number,
-        public nombre: string,
-        public edad: number
+        public nombre: string
     ) {}
-
-    mostrarInformacion(): string {
-        return `Paciente: ${this.nombre} | Edad: ${this.edad}`;
-    }
 }
