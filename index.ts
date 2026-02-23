@@ -11,6 +11,15 @@ const rl = readline.createInterface({
   output: process.stdout
 });
 
+const cancelar = (input: string): boolean => {
+  if (input.trim().toLowerCase() === "cancelar") {
+    console.log("\n Proceso cancelado por el usuario.");
+    rl.close();
+    return true;
+  }
+  return false;
+};
+
 // ===== Especialidades disponibles =====
 const especialidades = [
   new Especialidad("Cardiología"),
@@ -28,6 +37,11 @@ const medicos = [
   new Medico(4, "Dr. Liam Sanchez", especialidades[3]!, ["9:30", "11:00", "14:00"]),
   new Medico(5, "Dr. Adrian Apaza", especialidades[4]!, ["10:00", "12:00", "15:00"]),
 ];
+
+
+const normalizar = (texto: string) =>
+  texto.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+
 
 console.clear();
 console.log("=== SISTEMA DE CITAS MÉDICAS ===\n");
@@ -58,9 +72,6 @@ rl.question("Ingrese DNI del paciente: ", (dni) => {
       console.log(`- ${esp.nombre}`);
     });
 
-    const normalizar = (texto: string) =>
-      texto.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-
     rl.question("Ingrese la especialidad: ", (nombreEsp) => {
       const especialidad = especialidades.find(
         (esp) => normalizar(esp.nombre) === normalizar(nombreEsp.trim())
@@ -71,6 +82,7 @@ rl.question("Ingrese DNI del paciente: ", (dni) => {
       rl.close();
       return;
     }
+
      //PARTE DE ESPECIALIDAD PERO TRATA DE MEDICO
     const medico = medicos.find(
       (med) => med.especialidad.nombre.toLowerCase() === especialidad.nombre.toLowerCase()
@@ -91,7 +103,11 @@ rl.question("Ingrese DNI del paciente: ", (dni) => {
         console.log(`${i + 1}. ${hora}`);
       });
 
+      console.log('(Escribe "cancelar" en cualquier momento para salir)\n');
+
       rl.question("Seleccione horario: ", (opcionHora) => {
+        if (cancelar(opcionHora)) return;
+
         const indexHora = Number(opcionHora) - 1;
         const hora = medico.horarios[indexHora];
 
@@ -101,20 +117,45 @@ rl.question("Ingrese DNI del paciente: ", (dni) => {
         return;
       }
 
+      //VALIDAR LA CITA
+
+      console.log("\n=== RESUMEN DE LA CITA ===");
+      console.log(`Paciente:     ${paciente.nombre}`);
+      console.log(`Doctor:       ${medico.nombre}`);
+      console.log(`Especialidad: ${especialidad.nombre}`);
+      console.log(`Fecha:        2026-02-20`);
+      console.log(`Hora:         ${hora}`);
+
+      rl.question("\n¿Confirma la cita? (si/no): ", (respuesta) => {
+          if (cancelar(respuesta)) return;
+
 
         //CITA
-        const cita = new CitaMedica(
-          paciente,
-          medico,
-          "2026-02-20",
-          hora,
-          EstadoCita.PROGRAMADA
-        );
+      
+       if (normalizar(respuesta.trim()) === "si") {
+            const cita = new CitaMedica(
+              paciente,
+              medico,
+              "2026-02-20",
+              hora,
+              EstadoCita.PROGRAMADA
+            );
+            Notificacion.enviar(cita);
 
-        //  Notificación limpia 
-        Notificacion.enviar(cita);
+          } else {
+            const cita = new CitaMedica(
+              paciente,
+              medico,
+              "2026-02-20",
+              hora,
+              EstadoCita.CANCELADA
+            );
+            console.log("\n Cita cancelada.");
+            console.log(`Estado: ${cita.estado}`);
+          }
 
-        rl.close();
+          rl.close();
+        });
       });
     });
   });
