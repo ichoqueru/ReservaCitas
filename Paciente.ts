@@ -1,6 +1,6 @@
 export class Paciente {
     constructor(
-        public id: number,
+        public dni: string,
         public nombre: string
     ) {}
 }
