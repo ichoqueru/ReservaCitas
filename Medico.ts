@@ -1,4 +1,5 @@
 import { Especialidad } from "./Especialidad";
+import { Turno } from "./Turno";
 
 export class Medico {
     constructor(
@@ -7,4 +8,8 @@ export class Medico {
         public especialidad: Especialidad,
         public horarios: string[]
     ) {}
+
+    horariosPorTurno(turno: Turno): string[] {
+        return this.horarios.filter((hora) => turno.contiene(hora));
+    }
 }
