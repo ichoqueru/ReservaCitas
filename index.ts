@@ -6,6 +6,7 @@ import { CitaMedica } from "./CitaMedica";
 import { EstadoCita } from "./EstadoCita";
 import { Notificacion } from "./Notificacion";
 import { Turno } from "./Turno";
+import { GestorFecha } from "./GestorFecha";
 
 const rl = readline.createInterface({
   input: process.stdin,
@@ -52,6 +53,12 @@ const medicos = [
   new Medico(10, "Dra. Valeria Cruz",   especialidades[4]!, ["08:00", "09:00", "13:00", "17:00"]),
 ];
 
+//VERIFICAR QUE HAYA FECHA CONFIGURADA
+const diasDisponibles = GestorFecha.obtenerDiasDisponibles();
+if (diasDisponibles.length === 0) {
+  console.log("\n No hay semana configurada. Pida al administrador que ejecute: npx ts-node admin.ts");
+  process.exit(0);
+}
 
 console.clear();
 console.log("=== SISTEMA DE CITAS MÉDICAS ===\n");
@@ -78,9 +85,7 @@ rl.question("Ingrese DNI del paciente: ", (dni) => {
 
     //ESPECIALIDAD
     console.log("\nEspecialidades disponibles:");
-    especialidades.forEach((esp) => {
-      console.log(`- ${esp.nombre}`);
-    });
+    especialidades.forEach((esp) => console.log(`- ${esp.nombre}`));
 
     rl.question("Ingrese la especialidad: ", (nombreEsp) => {
       const especialidad = especialidades.find(
@@ -102,17 +107,15 @@ rl.question("Ingrese DNI del paciente: ", (dni) => {
     rl.question("Seleccione turno: ", (opcionTurno) => {
       if (cancelar(opcionTurno)) return;
 
-      const turno = opcionTurno.trim();
-
-      if (turno !== "1" && turno !== "2") {
+      if (opcionTurno.trim() !== "1" && opcionTurno.trim() !== "2") {
         console.log("\n Turno inválido");
         rl.close();
         return;
       }
 
-      const turnoSeleccionado = turno === "1" ? Turno.MAÑANA : Turno.TARDE;
+      const turnoSeleccionado = opcionTurno.trim() === "1" ? Turno.MAÑANA : Turno.TARDE;
       
-      // MÉDICOS disponibles para esa especialidad y turno
+      // MÉDICOS DISPONIBLES
       const medicosDisponibles = medicos.filter(
         (med) =>
           normalizar(med.especialidad.nombre) === normalizar(especialidad.nombre) &&
@@ -126,15 +129,13 @@ rl.question("Ingrese DNI del paciente: ", (dni) => {
       }
 
       console.log(`\nMédicos disponibles (${especialidad.nombre} - Turno ${turnoSeleccionado.nombre}):`);
-      medicosDisponibles.forEach((med, i) => {
-        console.log(`${i + 1}. ${med.nombre}`);
-      });
+      medicosDisponibles.forEach((med, i) => console.log(`${i + 1}. ${med.nombre}`));
+
 
       rl.question("Seleccione médico: ", (opcionMedico) => {
         if (cancelar(opcionMedico)) return;
 
-        const indexMedico = Number(opcionMedico) - 1;
-        const medico = medicosDisponibles[indexMedico];
+        const medico = medicosDisponibles[Number(opcionMedico) - 1];
 
         if (!medico) {
           console.log("\n Médico inválido");
@@ -142,65 +143,73 @@ rl.question("Ingrese DNI del paciente: ", (dni) => {
           return;
         }
 
-    //HORARIOS          
-    const horariosFiltrados = medico.horariosPorTurno(turnoSeleccionado);
 
-    console.log(`\nHorarios disponibles (Turno ${turnoSeleccionado.nombre}):`);
-    horariosFiltrados.forEach((hora, i) => {
-      console.log(`${i + 1}. ${hora}`);
-    });
+        //FECHA
+        console.log("\nDías disponibles:");
+        diasDisponibles.forEach((dia, i) => {
+          console.log(`${i + 1}. ${GestorFecha.nombreDia(dia)} ${dia}`);
+        });
 
-    rl.question("Seleccione horario: ", (opcionHora) => {
-      if (cancelar(opcionHora)) return;
+        rl.question("Seleccione día: ", (opcionDia) => {
+          if (cancelar(opcionDia)) return;
 
-      const indexHora = Number(opcionHora) - 1;
-      const hora = horariosFiltrados[indexHora];
+          const fecha = diasDisponibles[Number(opcionDia) - 1];
 
-      if (!hora) {
-         console.log("\n Horario inválido");
-         rl.close();
-         return;
-      }
+          if (!fecha) {
+            console.log("\n Día inválido");
+            rl.close();
+            return;
+          }
 
-      //VALIDAR LA CITA
+        //HORARIO          
+        const horariosFiltrados = medico.horariosPorTurno(turnoSeleccionado);
 
-      console.log("\n=== RESUMEN DE LA CITA ===");
-      console.log(`Paciente:     ${paciente.nombre}`);
-      console.log(`Doctor:       ${medico.nombre}`);
-      console.log(`Especialidad: ${especialidad.nombre}`);
-      console.log(`Turno:        ${turnoSeleccionado.nombre}`);
-      console.log(`Fecha:        2026-02-20`);
-      console.log(`Hora:         ${hora}`);
+        console.log(`\nHorarios disponibles (Turno ${turnoSeleccionado.nombre}):`);
+        horariosFiltrados.forEach((hora, i) => console.log(`${i + 1}. ${hora}`));
 
-      rl.question("\n¿Confirma la cita? (si/no): ", (respuesta) => {
-        if (cancelar(respuesta)) return;
+        rl.question("Seleccione horario: ", (opcionHora) => {
+          if (cancelar(opcionHora)) return;
+          
+          const hora = horariosFiltrados[Number(opcionHora) - 1];
+
+          if (!hora) {
+            console.log("\n Horario inválido");
+            rl.close();
+            return;
+          }
+
+          //VALIDAR LA CITA
+
+          console.log("\n=== RESUMEN DE LA CITA ===");
+          console.log(`Paciente:     ${paciente.nombre}`);
+          console.log(`Doctor:       ${medico.nombre}`);
+          console.log(`Especialidad: ${especialidad.nombre}`);
+          console.log(`Turno:        ${turnoSeleccionado.nombre}`);
+          console.log(`Fecha:        ${GestorFecha.nombreDia(fecha)} ${fecha}`);
+          console.log(`Hora:         ${hora}`);
+
+          rl.question("\n¿Confirma la cita? (si/no): ", (respuesta) => {
+            if (cancelar(respuesta)) return;
 
 
-        //CITA
+          //CITA
       
-        if (normalizar(respuesta.trim()) === "si") {
-          const cita = new CitaMedica(
-            paciente,
-            medico,
-            "2026-02-20",
-            hora,
-            EstadoCita.PROGRAMADA
-          );
-          Notificacion.enviar(cita);
+            if (normalizar(respuesta.trim()) === "si") {
+              const cita = new CitaMedica(
+                paciente,
+                medico,
+                fecha,
+                hora,
+                EstadoCita.PROGRAMADA
+              );
+              Notificacion.enviar(cita);
         
-        } else {
-          const cita = new CitaMedica(
-            paciente,
-            medico,
-            "2026-02-20",
-            hora,
-            EstadoCita.CANCELADA
-          );
-          console.log("\n Cita cancelada.");
-          console.log(`Estado: ${cita.estado}`);
-        }
-
-        rl.close();
+            } else {
+              console.log("\n Cita cancelada.");
+            }
+                          
+            rl.close();
+              });
             });
           });
         });
