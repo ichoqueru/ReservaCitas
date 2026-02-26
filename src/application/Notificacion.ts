@@ -1,4 +1,4 @@
-import { CitaMedica } from "./CitaMedica";
+import { CitaMedica } from "../domain/CitaMedica";
 import { GestorCitas } from "./GestorCitas";
 
 export class Notificacion {

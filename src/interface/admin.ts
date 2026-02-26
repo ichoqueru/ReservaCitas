@@ -1,6 +1,6 @@
 import * as readline from "readline";
-import { GestorFecha } from "./GestorFecha";
-import { GestorCitas } from "./GestorCitas";
+import { GestorFecha } from "../application/GestorFecha";
+import { GestorCitas } from "../application/GestorCitas";
 
 const rl = readline.createInterface({
   input: process.stdin,

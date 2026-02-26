@@ -1,13 +1,12 @@
 import * as readline from "readline";
-import { Paciente } from "./Paciente";
-import { Medico } from "./Medico";
-import { Especialidad } from "./Especialidad";
-import { CitaMedica } from "./CitaMedica";
-import { EstadoCita } from "./EstadoCita";
-import { Notificacion } from "./Notificacion";
-import { Turno } from "./Turno";
-import { GestorFecha } from "./GestorFecha";
-import { ListaMedicos } from "./ListaMedicos";
+import { Paciente } from "../domain/Paciente";
+import { Especialidad } from "../domain/Especialidad";
+import { CitaMedica } from "../domain/CitaMedica";
+import { EstadoCita } from "../domain/EstadoCita";
+import { Notificacion } from "../application/Notificacion";
+import { Turno } from "../domain/Turno";
+import { GestorFecha } from "../application/GestorFecha";
+import { ListaMedicos } from "../data/ListaMedicos";
 
 const rl = readline.createInterface({
   input: process.stdin,

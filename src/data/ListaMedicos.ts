@@ -1,5 +1,5 @@
-import { Medico } from "./Medico";
-import { Especialidad } from "./Especialidad";
+import { Medico } from "../domain/Medico";
+import { Especialidad } from "../domain/Especialidad";
 
 export class ListaMedicos {
 
