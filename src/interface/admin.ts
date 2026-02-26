@@ -16,7 +16,7 @@ console.log("3. Solo reiniciar citas\n");
 rl.question("Seleccione opción: ", (opcion) => {
 
   if (opcion === "1" || opcion === "2") {
-    rl.question("Ingrese fecha del lunes (YYYY-MM-DD): ", (fecha) => {
+    rl.question("Ingrese fecha del dia de reserva (YYYY-MM-DD): ", (fecha) => {
 
       if (!/^\d{4}-\d{2}-\d{2}$/.test(fecha)) {
         console.log("\n Fecha inválida, use el formato YYYY-MM-DD (ej: 2026-02-23)");
@@ -25,14 +25,14 @@ rl.question("Seleccione opción: ", (opcion) => {
       }
 
       const dia = new Date(fecha + "T00:00:00").getDay();
-      if (dia !== 1) {
-        console.log("\n La fecha debe ser un lunes");
+      if (dia == 0) {
+        console.log("\n La fecha de reserva no puede ser domingo");
         rl.close();
         return;
       }
 
-      GestorFecha.guardarFechaInicio(fecha);
-      console.log(`\n Fecha de inicio configurada: ${fecha}`);
+      GestorFecha.guardarConfiguracion(fecha);
+      console.log(`\n Fecha de reserva configurado: ${GestorFecha.nombreDia(fecha)} ${fecha}`);
 
       if (opcion === "1") {
         GestorCitas.reiniciar();

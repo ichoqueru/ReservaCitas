@@ -39,10 +39,18 @@ const especialidades = [
 //MEDICOS
 const medicos = ListaMedicos.obtener(especialidades);
 
-//VERIFICAR QUE HAYA FECHA CONFIGURADA
+//VERIFICAR FECHA CONFIGURADA
 const diasDisponibles = GestorFecha.obtenerDiasDisponibles();
 if (diasDisponibles.length === 0) {
   console.log("\n No hay semana configurada. Pida al administrador que ejecute: npx ts-node admin.ts");
+  process.exit(0);
+}
+
+//VERIFICAR DIA DE RESERVA
+if (!GestorFecha.esDiaDeReserva()) {
+  const fechaReserva = GestorFecha.obtenerFechaReserva()!;
+  console.log(`\n Las reservas solo se pueden realizar el día ${GestorFecha.nombreDia(fechaReserva)} ${fechaReserva}.`);
+  console.log(" Vuelva ese día para reservar su cita");
   process.exit(0);
 }
 
@@ -132,20 +140,20 @@ rl.question("Ingrese DNI del paciente: ", (dni) => {
 
         //FECHA
         console.log("\nDías disponibles:");
-        diasDisponibles.forEach((dia, i) => {
-          console.log(`${i + 1}. ${GestorFecha.nombreDia(dia)} ${dia}`);
-        });
+          diasDisponibles.forEach((dia, i) => {
+            console.log(`${i + 1}. ${GestorFecha.nombreDia(dia)} ${dia}`);
+          });
 
-        rl.question("Seleccione día: ", (opcionDia) => {
-          if (cancelar(opcionDia)) return;
+          rl.question("Seleccione día: ", (opcionDia) => {
+            if (cancelar(opcionDia)) return;
 
-          const fecha = diasDisponibles[Number(opcionDia) - 1];
+            const fecha = diasDisponibles[Number(opcionDia) - 1];
 
-          if (!fecha) {
-            console.log("\n Día inválido");
-            rl.close();
-            return;
-          }
+            if (!fecha) {
+              console.log("\n Día inválido");
+              rl.close();
+              return;
+            }
 
         //HORARIO          
         const horariosFiltrados = medico.horariosPorTurno(turnoSeleccionado);
