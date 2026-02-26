@@ -7,20 +7,22 @@ import { Notificacion } from "../application/Notificacion";
 import { Turno } from "../domain/Turno";
 import { GestorFecha } from "../application/GestorFecha";
 import { ListaMedicos } from "../data/ListaMedicos";
+import { GestorCancelacion } from "../application/GestorCancelacion";
 
 const rl = readline.createInterface({
   input: process.stdin,
   output: process.stdout
 });
 
+//CANCELAR
 const cancelar = (input: string): boolean => {
-  if (input.trim().toLowerCase() === "cancelar") {
-    console.log("\n Proceso cancelado por el usuario.");
+  if (GestorCancelacion.esCancelacion(input)) {
+    GestorCancelacion.cancelar();
     rl.close();
     return true;
   }
   return false;
-};
+}
 
 const normalizar = (texto: string) =>
   texto.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
