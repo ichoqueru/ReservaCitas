@@ -12,6 +12,7 @@ export class Notificacion {
     console.log("Estado:", cita.estado);
 
     const contenido =
+      `DNI: ${cita.paciente.dni} | ` +
       `Paciente: ${cita.paciente.nombre} | ` +
       `Doctor: ${cita.medico.nombre} | ` +
       `Fecha: ${cita.fecha} | ` +
@@ -19,6 +20,6 @@ export class Notificacion {
       `Estado: ${cita.estado}`;
 
     GestorCitas.guardarCita(cita.medico.especialidad.nombre, contenido);
-    console.log("\n Cita guardada correctamente.");
+    console.log("\n Cita programada");
   }
 }

@@ -16,8 +16,13 @@ export class GestorFecha {
   static esDiaDeReserva(): boolean {
     const fechaReserva = this.obtenerFechaReserva();
     if (!fechaReserva) return false;
-    const hoy = new Date().toISOString().split("T")[0]!;
-    return hoy === fechaReserva;
+    const hoy = new Date();
+    const año = hoy.getFullYear();
+    const mes = String(hoy.getMonth() + 1).padStart(2, "0");
+    const dia = String(hoy.getDate()).padStart(2, "0");
+    const hoyLocal = `${año}-${mes}-${dia}`;
+  
+    return hoyLocal === fechaReserva;
   }
 
   static obtenerDiasDisponibles(): string[] {

@@ -8,6 +8,7 @@ import { Turno } from "../domain/Turno";
 import { GestorFecha } from "../application/GestorFecha";
 import { ListaMedicos } from "../data/ListaMedicos";
 import { GestorCancelacion } from "../application/GestorCancelacion";
+import { GestorReprogramacion } from "../application/GestorReprogramacion";
 
 const rl = readline.createInterface({
   input: process.stdin,
@@ -42,20 +43,37 @@ const medicos = ListaMedicos.obtener(especialidades);
 //VERIFICAR FECHA CONFIGURADA
 const diasDisponibles = GestorFecha.obtenerDiasDisponibles();
 if (diasDisponibles.length === 0) {
-  console.log("\n No hay semana configurada. Pida al administrador que ejecute: npx ts-node admin.ts");
+  console.log("\n No hay fecha configurada");
   process.exit(0);
 }
 
 //VERIFICAR DIA DE RESERVA
 if (!GestorFecha.esDiaDeReserva()) {
   const fechaReserva = GestorFecha.obtenerFechaReserva()!;
-  console.log(`\n Las reservas solo se pueden realizar el día ${GestorFecha.nombreDia(fechaReserva)} ${fechaReserva}.`);
+  console.log(`\n Las reservas solo se pueden realizar el día ${GestorFecha.nombreDia(fechaReserva)}`);
   console.log(" Vuelva ese día para reservar su cita");
   process.exit(0);
 }
 
 console.clear();
 console.log("=== SISTEMA DE CITAS MÉDICAS ===\n");
+console.log("1. Reservar cita");
+console.log("2. Reprogramar cita");
+
+rl.question("Seleccione opción: ", (opcion) => {
+  if (cancelar(opcion)) return;
+
+  if (opcion === "1") {
+    reservarCita();
+  } else if (opcion === "2") {
+    reprogramarCita();
+  } else {
+    console.log("\n Opción inválida");
+    rl.close();
+  }
+});
+//============= RESERVAR CITA =============
+function reservarCita() {
 
 //  PRIMERO DNI
 rl.question("Ingrese DNI del paciente: ", (dni) => {
@@ -203,6 +221,7 @@ rl.question("Ingrese DNI del paciente: ", (dni) => {
             }
                           
             rl.close();
+                });
               });
             });
           });
@@ -210,4 +229,76 @@ rl.question("Ingrese DNI del paciente: ", (dni) => {
       });
     });
   });
-});
+}
+//=======REPROGRAMAR CITA=========
+function reprogramarCita() {
+
+  rl.question("\nIngrese su DNI: ", (dni) => {
+    if (cancelar(dni)) return;
+
+    if (!/^\d{8}$/.test(dni)) {
+      console.log("\n DNI inválido (debe tener 8 dígitos)");
+      rl.close();
+      return;
+    }
+
+    const resultado = GestorReprogramacion.buscarCita(dni);
+
+    if (!resultado) {
+      console.log("\n No se encontró ninguna cita con ese DNI.");
+      rl.close();
+      return;
+    }
+
+    console.log("\n Cita encontrada:");
+    console.log(resultado.linea);
+
+    console.log("\nDías disponibles:");
+    diasDisponibles.forEach((dia, i) => {
+      console.log(`${i + 1}. ${GestorFecha.nombreDia(dia)} ${dia}`);
+    });
+
+    rl.question("\nSeleccione nuevo día: ", (opcionDia) => {
+      if (cancelar(opcionDia)) return;
+
+      const nuevaFecha = diasDisponibles[Number(opcionDia) - 1];
+
+      if (!nuevaFecha) {
+        console.log("\n Día inválido");
+        rl.close();
+        return;
+      }
+
+      rl.question("Nueva hora (ej: 09:00): ", (nuevaHora) => {
+        if (cancelar(nuevaHora)) return;
+
+        if (!/^\d{2}:\d{2}$/.test(nuevaHora.trim())) {
+          console.log("\n Hora inválida, use el formato HH:MM (ej: 09:00)");
+          rl.close();
+          return;
+        }
+
+        console.log("\n=== RESUMEN DE REPROGRAMACIÓN ===");
+        console.log(`Nueva fecha: ${GestorFecha.nombreDia(nuevaFecha)} ${nuevaFecha}`);
+        console.log(`Nueva hora:  ${nuevaHora.trim()}`);
+
+        rl.question("\n¿Confirma la reprogramación? (si/no): ", (respuesta) => {
+          if (cancelar(respuesta)) return;
+
+          if (respuesta.trim().toLowerCase() === "si") {
+            const exito = GestorReprogramacion.reprogramar(dni, nuevaFecha, nuevaHora.trim());
+            if (exito) {
+              console.log("\n Cita reprogramada correctamente.");
+            } else {
+              console.log("\n No se pudo reprogramar la cita.");
+            }
+          } else {
+            console.log("\n Reprogramación cancelada.");
+          }
+
+          rl.close();
+        });
+      });
+    });
+  });
+}
