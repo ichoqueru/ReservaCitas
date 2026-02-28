@@ -18,7 +18,7 @@ export class GestorCitas {
     fs.appendFileSync(rutaArchivo, contenido + "\n", "utf-8");
   }
 
-  static contarCitasPorDoctor(nombreDoctor: string): number {
+  static contarCitasPorDoctor(nombreDoctor: string, fecha: string): number {
     this.inicializar();
     const archivos = fs.readdirSync(CARPETA);
     let total = 0;
@@ -26,7 +26,10 @@ export class GestorCitas {
     for (const archivo of archivos) {
       const ruta = path.join(CARPETA, archivo);
       const lineas = fs.readFileSync(ruta, "utf-8").split("\n").filter(l => l.trim() !== "");
-      total += lineas.filter(l => l.includes(`Doctor: ${nombreDoctor}`)).length;
+      total += lineas.filter(l => 
+        l.includes(`Doctor: ${nombreDoctor}`) && 
+        l.includes(`Fecha: ${fecha}`)
+      ).length;
     }
 
     return total;
