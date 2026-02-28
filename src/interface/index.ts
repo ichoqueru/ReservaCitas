@@ -9,6 +9,8 @@ import { GestorFecha } from "../application/GestorFecha";
 import { ListaMedicos } from "../data/ListaMedicos";
 import { GestorCancelacion } from "../application/GestorCancelacion";
 import { GestorReprogramacion } from "../application/GestorReprogramacion";
+import { GestorLimite } from "../application/GestorLimite";
+import { GestorCitas } from "../application/GestorCitas";
 
 const rl = readline.createInterface({
   input: process.stdin,
@@ -76,7 +78,8 @@ rl.question("Seleccione opción: ", (opcion) => {
 function reservarCita() {
 
 //  PRIMERO DNI
-rl.question("Ingrese DNI del paciente: ", (dni) => {
+console.log("\n----Reservar cita----");
+rl.question("\nIngrese DNI del paciente: ", (dni) => {
 
   if (!/^\d{8}$/.test(dni)) {
     console.log("\n DNI inválido (debe tener 8 dígitos)");
@@ -139,92 +142,101 @@ rl.question("Ingrese DNI del paciente: ", (dni) => {
         rl.close();
         return;
       }
+          console.log(`\nMédicos disponibles (${especialidad.nombre} - Turno ${turnoSeleccionado.nombre}):`);
+          medicosDisponibles.forEach((med, i) => console.log(`${i + 1}. ${med.nombre}`));
 
-      console.log(`\nMédicos disponibles (${especialidad.nombre} - Turno ${turnoSeleccionado.nombre}):`);
-      medicosDisponibles.forEach((med, i) => console.log(`${i + 1}. ${med.nombre}`));
+          const elegirMedico = () => {
+            rl.question("Seleccione médico: ", (opcionMedico) => {
+              if (cancelar(opcionMedico)) return;
 
+              const medico = medicosDisponibles[Number(opcionMedico) - 1];
 
-      rl.question("Seleccione médico: ", (opcionMedico) => {
-        if (cancelar(opcionMedico)) return;
+              if (!medico) {
+                console.log("\n Médico inválido, intente de nuevo:");
+                medicosDisponibles.forEach((med, i) => console.log(`${i + 1}. ${med.nombre}`));
+                elegirMedico();
+                return;
+              }
 
-        const medico = medicosDisponibles[Number(opcionMedico) - 1];
+              const limite = GestorLimite.obtenerLimite();
+              if (limite !== null) {
+                const citasActuales = GestorCitas.contarCitasPorDoctor(medico.nombre);
+                if (citasActuales >= limite) {
+                  console.log(`\n El ${medico.nombre} ya no tiene cupos disponibles.`);
+                  console.log("Por favor seleccione otro médico:\n");
+                  medicosDisponibles.forEach((med, i) => console.log(`${i + 1}. ${med.nombre}`));
+                  elegirMedico();
+                  return;
+                }
+              }
+              //DIAS DISPONIBLES
+              console.log("\nDías disponibles:");
+              diasDisponibles.forEach((dia, i) => {
+                console.log(`${i + 1}. ${GestorFecha.nombreDia(dia)} ${dia}`);
+              });
 
-        if (!medico) {
-          console.log("\n Médico inválido");
-          rl.close();
-          return;
-        }
+              rl.question("Seleccione día: ", (opcionDia) => {
+                if (cancelar(opcionDia)) return;
 
+                const fecha = diasDisponibles[Number(opcionDia) - 1];
 
-        //FECHA
-        console.log("\nDías disponibles:");
-          diasDisponibles.forEach((dia, i) => {
-            console.log(`${i + 1}. ${GestorFecha.nombreDia(dia)} ${dia}`);
-          });
+                if (!fecha) {
+                  console.log("\n Día inválido");
+                  rl.close();
+                  return;
+                }
 
-          rl.question("Seleccione día: ", (opcionDia) => {
-            if (cancelar(opcionDia)) return;
+                const horariosFiltrados = medico.horariosPorTurno(turnoSeleccionado);
 
-            const fecha = diasDisponibles[Number(opcionDia) - 1];
+                //HORARIOS
+                console.log(`\nHorarios disponibles (Turno ${turnoSeleccionado.nombre}):`);
+                horariosFiltrados.forEach((hora, i) => console.log(`${i + 1}. ${hora}`));
 
-            if (!fecha) {
-              console.log("\n Día inválido");
-              rl.close();
-              return;
-            }
+                rl.question("Seleccione horario: ", (opcionHora) => {
+                  if (cancelar(opcionHora)) return;
 
-        //HORARIO          
-        const horariosFiltrados = medico.horariosPorTurno(turnoSeleccionado);
+                  const hora = horariosFiltrados[Number(opcionHora) - 1];
 
-        console.log(`\nHorarios disponibles (Turno ${turnoSeleccionado.nombre}):`);
-        horariosFiltrados.forEach((hora, i) => console.log(`${i + 1}. ${hora}`));
+                  if (!hora) {
+                    console.log("\n Horario inválido");
+                    rl.close();
+                    return;
+                  }
 
-        rl.question("Seleccione horario: ", (opcionHora) => {
-          if (cancelar(opcionHora)) return;
-          
-          const hora = horariosFiltrados[Number(opcionHora) - 1];
+                  //VALIDAR LA CITA
+                  console.log("\n=== RESUMEN DE LA CITA ===");
+                  console.log(`Paciente:     ${paciente.nombre}`);
+                  console.log(`Doctor:       ${medico.nombre}`);
+                  console.log(`Especialidad: ${especialidad.nombre}`);
+                  console.log(`Turno:        ${turnoSeleccionado.nombre}`);
+                  console.log(`Fecha:        ${GestorFecha.nombreDia(fecha)} ${fecha}`);
+                  console.log(`Hora:         ${hora}`);
 
-          if (!hora) {
-            console.log("\n Horario inválido");
-            rl.close();
-            return;
-          }
+                  rl.question("\n¿Confirma la cita? (si/no): ", (respuesta) => {
+                    if (cancelar(respuesta)) return;
+                    
+                    //CITA
+                    if (normalizar(respuesta.trim()) === "si") {
+                      const cita = new CitaMedica(
+                        paciente,
+                        medico,
+                        fecha,
+                        hora,
+                        EstadoCita.PROGRAMADA
+                      );
+                      Notificacion.enviar(cita);
+                    } else {
+                      console.log("\n Cita cancelada.");
+                    }
 
-          //VALIDAR LA CITA
-
-          console.log("\n=== RESUMEN DE LA CITA ===");
-          console.log(`Paciente:     ${paciente.nombre}`);
-          console.log(`Doctor:       ${medico.nombre}`);
-          console.log(`Especialidad: ${especialidad.nombre}`);
-          console.log(`Turno:        ${turnoSeleccionado.nombre}`);
-          console.log(`Fecha:        ${GestorFecha.nombreDia(fecha)} ${fecha}`);
-          console.log(`Hora:         ${hora}`);
-
-          rl.question("\n¿Confirma la cita? (si/no): ", (respuesta) => {
-            if (cancelar(respuesta)) return;
-
-
-          //CITA
-      
-            if (normalizar(respuesta.trim()) === "si") {
-              const cita = new CitaMedica(
-                paciente,
-                medico,
-                fecha,
-                hora,
-                EstadoCita.PROGRAMADA
-              );
-              Notificacion.enviar(cita);
-        
-            } else {
-              console.log("\n Cita cancelada.");
-            }
-                          
-            rl.close();
+                    rl.close();
+                  });
                 });
               });
             });
-          });
+          };
+
+          elegirMedico();
         });
       });
     });
@@ -232,7 +244,7 @@ rl.question("Ingrese DNI del paciente: ", (dni) => {
 }
 //=======REPROGRAMAR CITA=========
 function reprogramarCita() {
-
+  console.log("\n----Reprogramar cita----");
   rl.question("\nIngrese su DNI: ", (dni) => {
     if (cancelar(dni)) return;
 

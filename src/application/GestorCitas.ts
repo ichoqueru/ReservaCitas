@@ -18,6 +18,20 @@ export class GestorCitas {
     fs.appendFileSync(rutaArchivo, contenido + "\n", "utf-8");
   }
 
+  static contarCitasPorDoctor(nombreDoctor: string): number {
+    this.inicializar();
+    const archivos = fs.readdirSync(CARPETA);
+    let total = 0;
+
+    for (const archivo of archivos) {
+      const ruta = path.join(CARPETA, archivo);
+      const lineas = fs.readFileSync(ruta, "utf-8").split("\n").filter(l => l.trim() !== "");
+      total += lineas.filter(l => l.includes(`Doctor: ${nombreDoctor}`)).length;
+    }
+
+    return total;
+  }
+
   static buscarCitaPorDNI(dni: string): { linea: string, archivo: string } | null {
     this.inicializar();
     const archivos = fs.readdirSync(CARPETA);
