@@ -179,11 +179,21 @@ function reservarCita() {
                     }
                   }
 
-                  const horariosFiltrados = medico.horariosPorTurno(turnoSeleccionado);
+                  const todosHorarios = medico.horariosPorTurno(turnoSeleccionado);
+                  const ocupados = GestorCitas.horariosOcupados(medico.nombre, fecha);
+                  const horariosFiltrados = todosHorarios.filter(h => !ocupados.includes(h));
+
+                  if (horariosFiltrados.length === 0) {
+                    console.log(`\n No hay horarios disponibles para el ${GestorFecha.nombreDia(fecha)}.`);
+                    console.log("Seleccione otro día:\n");
+                    diasDisponibles.forEach((dia, i) => console.log(`${i + 1}. ${GestorFecha.nombreDia(dia)} ${dia}`));
+                    elegirFecha();
+                    return;
+                  }
 
                   console.log(`\nHorarios disponibles (Turno ${turnoSeleccionado.nombre}):`);
                   horariosFiltrados.forEach((hora, i) => console.log(`${i + 1}. ${hora}`));
-
+                  
                   rl.question("Seleccione horario: ", (opcionHora) => {
                     if (cancelar(opcionHora)) return;
 

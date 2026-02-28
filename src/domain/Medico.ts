@@ -5,11 +5,10 @@ export class Medico {
     constructor(
         public id: number,
         public nombre: string,
-        public especialidad: Especialidad,
-        public horarios: string[]
+        public especialidad: Especialidad
     ) {}
 
     horariosPorTurno(turno: Turno): string[] {
-        return this.horarios.filter((hora) => turno.contiene(hora));
+        return turno.generarHorarios();
     }
 }

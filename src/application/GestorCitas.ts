@@ -18,21 +18,29 @@ export class GestorCitas {
     fs.appendFileSync(rutaArchivo, contenido + "\n", "utf-8");
   }
 
-  static contarCitasPorDoctor(nombreDoctor: string, fecha: string): number {
+  static horariosOcupados(nombreDoctor: string, fecha: string): string[] {
     this.inicializar();
     const archivos = fs.readdirSync(CARPETA);
-    let total = 0;
+    const ocupados: string[] = [];
 
     for (const archivo of archivos) {
       const ruta = path.join(CARPETA, archivo);
       const lineas = fs.readFileSync(ruta, "utf-8").split("\n").filter(l => l.trim() !== "");
-      total += lineas.filter(l => 
-        l.includes(`Doctor: ${nombreDoctor}`) && 
-        l.includes(`Fecha: ${fecha}`)
-      ).length;
+
+      for (const linea of lineas) {
+        if (linea.includes(`Doctor: ${nombreDoctor}`) && linea.includes(`Fecha: ${fecha}`)) {
+          const match = linea.match(/Hora: (\d{2}:\d{2})/);
+          if (match) ocupados.push(match[1]!);
+        }
+      }
     }
 
-    return total;
+    return ocupados;
+  }
+
+
+  static contarCitasPorDoctor(nombreDoctor: string, fecha: string): number {
+    return this.horariosOcupados(nombreDoctor, fecha).length;
   }
 
   static buscarCitaPorDNI(dni: string): { linea: string, archivo: string } | null {
@@ -80,6 +88,6 @@ export class GestorCitas {
     archivos.forEach((archivo) => {
       fs.writeFileSync(path.join(CARPETA, archivo), "", "utf-8");
     });
-    console.log("\n Citas reiniciadas correctamente.");
+    console.log("\n Citas reiniciadas correctamente");
   }
 }
