@@ -191,19 +191,9 @@ function reservarCita() {
                     return;
                   }
 
-                  console.log(`\nHorarios disponibles (Turno ${turnoSeleccionado.nombre}):`);
-                  horariosFiltrados.forEach((hora, i) => console.log(`${i + 1}. ${hora}`));
-                  
-                  rl.question("Seleccione horario: ", (opcionHora) => {
-                    if (cancelar(opcionHora)) return;
+                  const hora = horariosFiltrados[0]!;
+                  console.log(`\n Horario asignado automáticamente: ${hora}`);
 
-                    const hora = horariosFiltrados[Number(opcionHora) - 1];
-
-                    if (!hora) {
-                      console.log("\n Horario inválido");
-                      rl.close();
-                      return;
-                    }
 
                     console.log("\n=== RESUMEN DE LA CITA ===");
                     console.log(`Paciente:     ${paciente.nombre}`);
@@ -231,7 +221,7 @@ function reservarCita() {
 
                       rl.close();
                     });
-                  });
+                  
                 });
               };
 
