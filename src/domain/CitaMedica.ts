@@ -8,6 +8,7 @@ export class CitaMedica {
         public medico: Medico,
         public fecha: string,
         public hora: string,
-        public estado: EstadoCita
+        public estado: EstadoCita,
+        public turno: string
     ) {}
 }

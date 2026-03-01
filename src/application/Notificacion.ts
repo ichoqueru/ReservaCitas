@@ -15,6 +15,8 @@ export class Notificacion {
       `DNI: ${cita.paciente.dni} | ` +
       `Paciente: ${cita.paciente.nombre} | ` +
       `Doctor: ${cita.medico.nombre} | ` +
+      `Especialidad: ${cita.medico.especialidad.nombre} | ` +
+      `Turno: ${cita.turno} | ` +
       `Fecha: ${cita.fecha} | ` +
       `Hora: ${cita.hora} | ` +
       `Estado: ${cita.estado}`;

@@ -93,7 +93,6 @@ function reservarCita() {
 
       const paciente = new Paciente(dni, nombre.trim());
 
-      // TIPO DE CONSULTA
       console.log("\n¿Qué tipo de consulta desea?");
       console.log("1. Medicina General");
       console.log("2. Especialidades\n");
@@ -183,7 +182,8 @@ function reservarCita() {
                       medicoAsignado!,
                       fecha,
                       horaAsignada!,
-                      EstadoCita.PROGRAMADA
+                      EstadoCita.PROGRAMADA,
+                      turnoSeleccionado.nombre
                     );
                     Notificacion.enviar(cita);
                   } else {
@@ -317,7 +317,8 @@ function reservarCita() {
                             medico,
                             fecha,
                             hora,
-                            EstadoCita.PROGRAMADA
+                            EstadoCita.PROGRAMADA,
+                            turnoSeleccionado.nombre
                           );
                           Notificacion.enviar(cita);
                         } else {
