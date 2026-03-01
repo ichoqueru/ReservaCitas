@@ -37,7 +37,8 @@ const especialidades = [
   new Especialidad("Traumatología")
 ];
 
-const medicos = ListaMedicos.obtener(especialidades);
+const medicinaGeneral = new Especialidad("Medicina General");
+const medicos = ListaMedicos.obtener(especialidades, medicinaGeneral);
 
 const diasDisponibles = GestorFecha.obtenerDiasDisponibles();
 if (diasDisponibles.length === 0) {
@@ -92,145 +93,250 @@ function reservarCita() {
 
       const paciente = new Paciente(dni, nombre.trim());
 
-      console.log("\nEspecialidades disponibles:");
-      especialidades.forEach((esp) => console.log(`- ${esp.nombre}`));
+      // TIPO DE CONSULTA
+      console.log("\n¿Qué tipo de consulta desea?");
+      console.log("1. Medicina General");
+      console.log("2. Especialidades\n");
 
-      rl.question("Ingrese la especialidad: ", (nombreEsp) => {
-        const especialidad = especialidades.find(
-          (esp) => normalizar(esp.nombre) === normalizar(nombreEsp.trim())
-        );
+      rl.question("Seleccione opción: ", (opcionConsulta) => {
+        if (cancelar(opcionConsulta)) return;
 
-        if (!especialidad) {
-          console.log("\n Especialidad no encontrada");
+        if (opcionConsulta.trim() !== "1" && opcionConsulta.trim() !== "2") {
+          console.log("\n Opción inválida");
           rl.close();
           return;
         }
 
-        console.log("\nTurnos disponibles:");
-        console.log("1. Mañana");
-        console.log("2. Tarde\n");
+        if (opcionConsulta.trim() === "1") {
+          // MEDICINA GENERAL
+          console.log("\nTurnos disponibles:");
+          console.log("1. Mañana");
+          console.log("2. Tarde\n");
 
-        rl.question("Seleccione turno: ", (opcionTurno) => {
-          if (cancelar(opcionTurno)) return;
+          rl.question("Seleccione turno: ", (opcionTurno) => {
+            if (cancelar(opcionTurno)) return;
 
-          if (opcionTurno.trim() !== "1" && opcionTurno.trim() !== "2") {
-            console.log("\n Turno inválido");
-            rl.close();
-            return;
-          }
+            if (opcionTurno.trim() !== "1" && opcionTurno.trim() !== "2") {
+              console.log("\n Turno inválido");
+              rl.close();
+              return;
+            }
 
-          const turnoSeleccionado = opcionTurno.trim() === "1" ? Turno.MAÑANA : Turno.TARDE;
+            const turnoSeleccionado = opcionTurno.trim() === "1" ? Turno.MAÑANA : Turno.TARDE;
+            const medicosMG = medicos.filter(med => med.especialidad.nombre === "Medicina General");
 
-          const medicosDisponibles = medicos.filter(
-            (med) =>
-              normalizar(med.especialidad.nombre) === normalizar(especialidad.nombre) &&
-              med.horariosPorTurno(turnoSeleccionado).length > 0
-          );
+            console.log("\nDías disponibles:");
+            diasDisponibles.forEach((dia, i) => {
+              console.log(`${i + 1}. ${GestorFecha.nombreDia(dia)} ${dia}`);
+            });
 
-          if (medicosDisponibles.length === 0) {
-            console.log(`\n No hay médicos disponibles para ${especialidad.nombre} en el turno ${turnoSeleccionado.nombre}`);
-            rl.close();
-            return;
-          }
+            const elegirFechaMG = () => {
+              rl.question("Seleccione día: ", (opcionDia) => {
+                if (cancelar(opcionDia)) return;
 
-          console.log(`\nMédicos disponibles (${especialidad.nombre} - Turno ${turnoSeleccionado.nombre}):`);
-          medicosDisponibles.forEach((med, i) => console.log(`${i + 1}. ${med.nombre}`));
+                const fecha = diasDisponibles[Number(opcionDia) - 1];
 
-          const elegirMedico = () => {
-            rl.question("Seleccione médico: ", (opcionMedico) => {
-              if (cancelar(opcionMedico)) return;
+                if (!fecha) {
+                  console.log("\n Día inválido, intente de nuevo:");
+                  diasDisponibles.forEach((dia, i) => console.log(`${i + 1}. ${GestorFecha.nombreDia(dia)} ${dia}`));
+                  elegirFechaMG();
+                  return;
+                }
 
-              const medico = medicosDisponibles[Number(opcionMedico) - 1];
+                let medicoAsignado = null;
+                let horaAsignada = null;
 
-              if (!medico) {
-                console.log("\n Médico inválido, intente de nuevo:");
-                medicosDisponibles.forEach((med, i) => console.log(`${i + 1}. ${med.nombre}`));
-                elegirMedico();
+                for (const med of medicosMG) {
+                  const todosHorarios = med.horariosPorTurno(turnoSeleccionado);
+                  const ocupados = GestorCitas.horariosOcupados(med.nombre, fecha);
+                  const disponibles = todosHorarios.filter(h => !ocupados.includes(h));
+
+                  if (disponibles.length > 0) {
+                    medicoAsignado = med;
+                    horaAsignada = disponibles[0]!;
+                    break;
+                  }
+                }
+
+                if (!medicoAsignado || !horaAsignada) {
+                  console.log(`\n No hay horarios disponibles para el ${GestorFecha.nombreDia(fecha)}.`);
+                  console.log("Seleccione otro día:\n");
+                  diasDisponibles.forEach((dia, i) => console.log(`${i + 1}. ${GestorFecha.nombreDia(dia)} ${dia}`));
+                  elegirFechaMG();
+                  return;
+                }
+
+                console.log("\n=== RESUMEN DE LA CITA ===");
+                console.log(`Paciente:     ${paciente.nombre}`);
+                console.log(`Doctor:       ${medicoAsignado.nombre}`);
+                console.log(`Tipo:         Medicina General`);
+                console.log(`Turno:        ${turnoSeleccionado.nombre}`);
+                console.log(`Fecha:        ${GestorFecha.nombreDia(fecha)} ${fecha}`);
+                console.log(`Hora:         ${horaAsignada}`);
+
+                rl.question("\n¿Confirma la cita? (si/no): ", (respuesta) => {
+                  if (cancelar(respuesta)) return;
+
+                  if (normalizar(respuesta.trim()) === "si") {
+                    const cita = new CitaMedica(
+                      paciente,
+                      medicoAsignado!,
+                      fecha,
+                      horaAsignada!,
+                      EstadoCita.PROGRAMADA
+                    );
+                    Notificacion.enviar(cita);
+                  } else {
+                    console.log("\n Cita cancelada.");
+                  }
+
+                  rl.close();
+                });
+              });
+            };
+
+            elegirFechaMG();
+          });
+
+        } else {
+          // ESPECIALIDADES
+          console.log("\nEspecialidades disponibles:");
+          especialidades.forEach((esp) => console.log(`- ${esp.nombre}`));
+
+          rl.question("Ingrese la especialidad: ", (nombreEsp) => {
+            const especialidad = especialidades.find(
+              (esp) => normalizar(esp.nombre) === normalizar(nombreEsp.trim())
+            );
+
+            if (!especialidad) {
+              console.log("\n Especialidad no encontrada");
+              rl.close();
+              return;
+            }
+
+            console.log("\nTurnos disponibles:");
+            console.log("1. Mañana");
+            console.log("2. Tarde\n");
+
+            rl.question("Seleccione turno: ", (opcionTurno) => {
+              if (cancelar(opcionTurno)) return;
+
+              if (opcionTurno.trim() !== "1" && opcionTurno.trim() !== "2") {
+                console.log("\n Turno inválido");
+                rl.close();
                 return;
               }
 
-              console.log("\nDías disponibles:");
-              diasDisponibles.forEach((dia, i) => {
-                console.log(`${i + 1}. ${GestorFecha.nombreDia(dia)} ${dia}`);
-              });
+              const turnoSeleccionado = opcionTurno.trim() === "1" ? Turno.MAÑANA : Turno.TARDE;
 
-              const elegirFecha = () => {
-                rl.question("Seleccione día: ", (opcionDia) => {
-                  if (cancelar(opcionDia)) return;
+              const medicosDisponibles = medicos.filter(
+                (med) => normalizar(med.especialidad.nombre) === normalizar(especialidad.nombre)
+              );
 
-                  const fecha = diasDisponibles[Number(opcionDia) - 1];
+              if (medicosDisponibles.length === 0) {
+                console.log(`\n No hay médicos disponibles para ${especialidad.nombre}`);
+                rl.close();
+                return;
+              }
 
-                  if (!fecha) {
-                    console.log("\n Día inválido, intente de nuevo:");
-                    diasDisponibles.forEach((dia, i) => console.log(`${i + 1}. ${GestorFecha.nombreDia(dia)} ${dia}`));
-                    elegirFecha();
+              console.log(`\nMédicos disponibles (${especialidad.nombre} - Turno ${turnoSeleccionado.nombre}):`);
+              medicosDisponibles.forEach((med, i) => console.log(`${i + 1}. ${med.nombre}`));
+
+              const elegirMedico = () => {
+                rl.question("Seleccione médico: ", (opcionMedico) => {
+                  if (cancelar(opcionMedico)) return;
+
+                  const medico = medicosDisponibles[Number(opcionMedico) - 1];
+
+                  if (!medico) {
+                    console.log("\n Médico inválido, intente de nuevo:");
+                    medicosDisponibles.forEach((med, i) => console.log(`${i + 1}. ${med.nombre}`));
+                    elegirMedico();
                     return;
                   }
 
-                  const limite = GestorLimite.obtenerLimite();
-                  if (limite !== null) {
-                    const citasActuales = GestorCitas.contarCitasPorDoctor(medico.nombre, fecha);
-                    if (citasActuales >= limite) {
-                      console.log(`\n El ${medico.nombre} ya no tiene cupos para el ${GestorFecha.nombreDia(fecha)}.`);
-                      console.log("Seleccione otro día:\n");
-                      diasDisponibles.forEach((dia, i) => console.log(`${i + 1}. ${GestorFecha.nombreDia(dia)} ${dia}`));
-                      elegirFecha();
-                      return;
-                    }
-                  }
+                  console.log("\nDías disponibles:");
+                  diasDisponibles.forEach((dia, i) => {
+                    console.log(`${i + 1}. ${GestorFecha.nombreDia(dia)} ${dia}`);
+                  });
 
-                  const todosHorarios = medico.horariosPorTurno(turnoSeleccionado);
-                  const ocupados = GestorCitas.horariosOcupados(medico.nombre, fecha);
-                  const horariosFiltrados = todosHorarios.filter(h => !ocupados.includes(h));
+                  const elegirFecha = () => {
+                    rl.question("Seleccione día: ", (opcionDia) => {
+                      if (cancelar(opcionDia)) return;
 
-                  if (horariosFiltrados.length === 0) {
-                    console.log(`\n No hay horarios disponibles para el ${GestorFecha.nombreDia(fecha)}.`);
-                    console.log("Seleccione otro día:\n");
-                    diasDisponibles.forEach((dia, i) => console.log(`${i + 1}. ${GestorFecha.nombreDia(dia)} ${dia}`));
-                    elegirFecha();
-                    return;
-                  }
+                      const fecha = diasDisponibles[Number(opcionDia) - 1];
 
-                  const hora = horariosFiltrados[0]!;
-                  console.log(`\n Horario asignado automáticamente: ${hora}`);
-
-
-                    console.log("\n=== RESUMEN DE LA CITA ===");
-                    console.log(`Paciente:     ${paciente.nombre}`);
-                    console.log(`Doctor:       ${medico.nombre}`);
-                    console.log(`Especialidad: ${especialidad.nombre}`);
-                    console.log(`Turno:        ${turnoSeleccionado.nombre}`);
-                    console.log(`Fecha:        ${GestorFecha.nombreDia(fecha)} ${fecha}`);
-                    console.log(`Hora:         ${hora}`);
-
-                    rl.question("\n¿Confirma la cita? (si/no): ", (respuesta) => {
-                      if (cancelar(respuesta)) return;
-
-                      if (normalizar(respuesta.trim()) === "si") {
-                        const cita = new CitaMedica(
-                          paciente,
-                          medico,
-                          fecha,
-                          hora,
-                          EstadoCita.PROGRAMADA
-                        );
-                        Notificacion.enviar(cita);
-                      } else {
-                        console.log("\n Cita cancelada.");
+                      if (!fecha) {
+                        console.log("\n Día inválido, intente de nuevo:");
+                        diasDisponibles.forEach((dia, i) => console.log(`${i + 1}. ${GestorFecha.nombreDia(dia)} ${dia}`));
+                        elegirFecha();
+                        return;
                       }
 
-                      rl.close();
+                      const limite = GestorLimite.obtenerLimite();
+                      if (limite !== null) {
+                        const citasActuales = GestorCitas.contarCitasPorDoctor(medico.nombre, fecha);
+                        if (citasActuales >= limite) {
+                          console.log(`\n No hay horarios disponibles para el ${GestorFecha.nombreDia(fecha)}.`);
+                          console.log("Seleccione otro día:\n");
+                          diasDisponibles.forEach((dia, i) => console.log(`${i + 1}. ${GestorFecha.nombreDia(dia)} ${dia}`));
+                          elegirFecha();
+                          return;
+                        }
+                      }
+
+                      const todosHorarios = medico.horariosPorTurno(turnoSeleccionado);
+                      const ocupados = GestorCitas.horariosOcupados(medico.nombre, fecha);
+                      const horariosFiltrados = todosHorarios.filter(h => !ocupados.includes(h));
+
+                      if (horariosFiltrados.length === 0) {
+                        console.log(`\n No hay horarios disponibles para el ${GestorFecha.nombreDia(fecha)}.`);
+                        console.log("Seleccione otro día:\n");
+                        diasDisponibles.forEach((dia, i) => console.log(`${i + 1}. ${GestorFecha.nombreDia(dia)} ${dia}`));
+                        elegirFecha();
+                        return;
+                      }
+
+                      const hora = horariosFiltrados[0]!;
+                      console.log(`\n Horario asignado automáticamente: ${hora}`);
+
+                      console.log("\n=== RESUMEN DE LA CITA ===");
+                      console.log(`Paciente:     ${paciente.nombre}`);
+                      console.log(`Doctor:       ${medico.nombre}`);
+                      console.log(`Especialidad: ${especialidad.nombre}`);
+                      console.log(`Turno:        ${turnoSeleccionado.nombre}`);
+                      console.log(`Fecha:        ${GestorFecha.nombreDia(fecha)} ${fecha}`);
+                      console.log(`Hora:         ${hora}`);
+
+                      rl.question("\n¿Confirma la cita? (si/no): ", (respuesta) => {
+                        if (cancelar(respuesta)) return;
+
+                        if (normalizar(respuesta.trim()) === "si") {
+                          const cita = new CitaMedica(
+                            paciente,
+                            medico,
+                            fecha,
+                            hora,
+                            EstadoCita.PROGRAMADA
+                          );
+                          Notificacion.enviar(cita);
+                        } else {
+                          console.log("\n Cita cancelada.");
+                        }
+
+                        rl.close();
+                      });
                     });
-                  
+                  };
+
+                  elegirFecha();
                 });
               };
 
-              elegirFecha();
+              elegirMedico();
             });
-          };
-
-          elegirMedico();
-        });
+          });
+        }
       });
     });
   });

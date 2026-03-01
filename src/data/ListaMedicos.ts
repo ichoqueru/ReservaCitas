@@ -3,7 +3,7 @@ import { Especialidad } from "../domain/Especialidad";
 
 export class ListaMedicos {
 
-    static obtener(especialidades: Especialidad[]): Medico[] {
+    static obtener(especialidades: Especialidad[], medicinaGeneral: Especialidad ): Medico[] {
     return [
       // Cardiología
       new Medico(1,  "Dr. Juan Pérez",      especialidades[0]!),
@@ -20,6 +20,10 @@ export class ListaMedicos {
       // Traumatología
       new Medico(9,  "Dr. Adrian Apaza",    especialidades[4]!),
       new Medico(10, "Dra. Valeria Cruz",   especialidades[4]!),
+      //Medicina General
+      new Medico(11, "Dr. Roberto Vargas",  medicinaGeneral),
+      new Medico(12, "Dra. Carmen Huanca",  medicinaGeneral),
+    
     ];
   }
 }
