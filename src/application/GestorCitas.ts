@@ -60,6 +60,30 @@ export class GestorCitas {
     return null;
   }
 
+  static obtenerDatosCita(dni: string): { doctor: string, turno: string } | null {
+  this.inicializar();
+  const archivos = fs.readdirSync(CARPETA);
+
+  for (const archivo of archivos) {
+    const ruta = path.join(CARPETA, archivo);
+    const lineas = fs.readFileSync(ruta, "utf-8").split("\n").filter(l => l.trim() !== "");
+
+    for (const linea of lineas) {
+      if (linea.includes(`DNI: ${dni}`)) {
+        const doctorMatch = linea.match(/Doctor: ([^|]+)\|/);
+        const turnoMatch = linea.match(/Turno: ([^|]+)\|/);
+        if (doctorMatch && turnoMatch) {
+          return {
+            doctor: doctorMatch[1]!.trim(),
+            turno: turnoMatch[1]!.trim()
+          };
+        }
+      }
+    }
+  }
+  return null;
+}
+
   static reprogramarCita(dni: string, nuevaFecha: string, nuevaHora: string): boolean {
     this.inicializar();
     const archivos = fs.readdirSync(CARPETA);

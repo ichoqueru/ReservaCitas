@@ -366,40 +366,65 @@ function reprogramarCita() {
     console.log("\n Cita encontrada:");
     console.log(resultado.linea);
 
+    const datos = GestorCitas.obtenerDatosCita(dni);
+    if (!datos) {
+      console.log("\n No se pudieron obtener los datos de la cita.");
+      rl.close();
+      return;
+    }
+
+    const turnoSeleccionado = datos.turno === "Mañana" ? Turno.MAÑANA : Turno.TARDE;
+    const medicoEncontrado = medicos.find(m => m.nombre === datos.doctor);
+
+    if (!medicoEncontrado) {
+      console.log("\n No se encontró el médico de la cita.");
+      rl.close();
+      return;
+    }
+
     console.log("\nDías disponibles:");
     diasDisponibles.forEach((dia, i) => {
       console.log(`${i + 1}. ${GestorFecha.nombreDia(dia)} ${dia}`);
     });
 
-    rl.question("\nSeleccione nuevo día: ", (opcionDia) => {
-      if (cancelar(opcionDia)) return;
+    const elegirNuevaFecha = () => {
+      rl.question("\nSeleccione nuevo día: ", (opcionDia) => {
+        if (cancelar(opcionDia)) return;
 
-      const nuevaFecha = diasDisponibles[Number(opcionDia) - 1];
+        const nuevaFecha = diasDisponibles[Number(opcionDia) - 1];
 
-      if (!nuevaFecha) {
-        console.log("\n Día inválido");
-        rl.close();
-        return;
-      }
-
-      rl.question("Nueva hora (ej: 09:00): ", (nuevaHora) => {
-        if (cancelar(nuevaHora)) return;
-
-        if (!/^\d{2}:\d{2}$/.test(nuevaHora.trim())) {
-          console.log("\n Hora inválida, use el formato HH:MM (ej: 09:00)");
-          rl.close();
+        if (!nuevaFecha) {
+          console.log("\n Día inválido, intente de nuevo:");
+          diasDisponibles.forEach((dia, i) => console.log(`${i + 1}. ${GestorFecha.nombreDia(dia)} ${dia}`));
+          elegirNuevaFecha();
           return;
         }
 
+        const todosHorarios = medicoEncontrado.horariosPorTurno(turnoSeleccionado);
+        const ocupados = GestorCitas.horariosOcupados(medicoEncontrado.nombre, nuevaFecha);
+        const disponibles = todosHorarios.filter(h => !ocupados.includes(h));
+
+        if (disponibles.length === 0) {
+          console.log(`\n No hay horarios disponibles para el ${GestorFecha.nombreDia(nuevaFecha)}.`);
+          console.log("Seleccione otro día:\n");
+          diasDisponibles.forEach((dia, i) => console.log(`${i + 1}. ${GestorFecha.nombreDia(dia)} ${dia}`));
+          elegirNuevaFecha();
+          return;
+        }
+
+        const nuevaHora = disponibles[0]!;
+        console.log(`\n Horario asignado automáticamente: ${nuevaHora}`);
+
         console.log("\n=== RESUMEN DE REPROGRAMACIÓN ===");
+        console.log(`Doctor:      ${medicoEncontrado.nombre}`);
         console.log(`Nueva fecha: ${GestorFecha.nombreDia(nuevaFecha)} ${nuevaFecha}`);
-        console.log(`Nueva hora:  ${nuevaHora.trim()}`);
+        console.log(`Nueva hora:  ${nuevaHora}`);
 
         rl.question("\n¿Confirma la reprogramación? (si/no): ", (respuesta) => {
           if (cancelar(respuesta)) return;
 
           if (respuesta.trim().toLowerCase() === "si") {
-            const exito = GestorReprogramacion.reprogramar(dni, nuevaFecha, nuevaHora.trim());
+            const exito = GestorReprogramacion.reprogramar(dni, nuevaFecha, nuevaHora);
             if (exito) {
               console.log("\n Cita reprogramada correctamente.");
             } else {
@@ -412,6 +437,8 @@ function reprogramarCita() {
           rl.close();
         });
       });
-    });
+    };
+
+    elegirNuevaFecha();
   });
 }
