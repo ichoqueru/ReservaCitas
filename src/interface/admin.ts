@@ -12,6 +12,7 @@ console.log("=== PANEL DE ADMINISTRACIÓN ===\n");
 console.log("1. Configurar nueva semana (reiniciar citas + nueva fecha)");
 console.log("2. Solo cambiar fecha de inicio");
 console.log("3. Solo reiniciar citas\n");
+console.log("4. Ver citas del día\n");
 
 rl.question("Seleccione opción: ", (opcion) => {
 
@@ -44,7 +45,21 @@ rl.question("Seleccione opción: ", (opcion) => {
       rl.close();
     });
 
-    } else {
+    } else if (opcion === "4") {
+      rl.question("Ingrese fecha a consultar (YYYY-MM-DD): ", (fecha) => {
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(fecha)) {
+        console.log("\n Fecha inválida, use el formato YYYY-MM-DD");
+        rl.close();
+        return;
+        }
+
+        const { GestorFecha } = require("../application/GestorFecha");
+        console.log(`\n=== CITAS DEL DÍA: ${GestorFecha.nombreDia(fecha)} ${fecha} ===`);
+        GestorCitas.verCitasDelDia(fecha);
+        rl.close();
+      });
+    }
+    else {
     console.log("\n Opción inválida");
     rl.close();
   }

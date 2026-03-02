@@ -146,6 +146,42 @@ export class GestorCitas {
   return false;
 }
 
+static verCitasDelDia(fecha: string): void {
+  this.inicializar();
+  const archivos = fs.readdirSync(CARPETA).filter(a => a.endsWith(".txt"));
+
+  let hayCitas = false;
+
+  for (const archivo of archivos) {
+    const especialidad = archivo.replace(".txt", "");
+    const ruta = path.join(CARPETA, archivo);
+    const lineas = fs.readFileSync(ruta, "utf-8").split("\n").filter(l => l.trim() !== "");
+    const citasDelDia = lineas.filter(l => l.includes(`Fecha: ${fecha}`));
+
+    if (citasDelDia.length > 0) {
+      hayCitas = true;
+      console.log(`\n${especialidad.toUpperCase()}:`);
+      citasDelDia.forEach((linea) => {
+        const pacienteMatch = linea.match(/Paciente: ([^|]+)\|/);
+        const doctorMatch = linea.match(/Doctor: ([^|]+)\|/);
+        const horaMatch = linea.match(/Hora: (\d{2}:\d{2})/);
+        const estadoMatch = linea.match(/Estado: (\S+)/);
+
+        const paciente = pacienteMatch ? pacienteMatch[1]!.trim() : "?";
+        const doctor = doctorMatch ? doctorMatch[1]!.trim() : "?";
+        const hora = horaMatch ? horaMatch[1] : "?";
+        const estado = estadoMatch ? estadoMatch[1] : "?";
+
+        console.log(`  ${hora} | ${paciente} | ${doctor} | ${estado}`);
+      });
+    }
+  }
+
+  if (!hayCitas) {
+    console.log("\n No hay citas para ese día.");
+  }
+}
+
   static reiniciar(): void {
     if (!fs.existsSync(CARPETA)) return;
     const archivos = fs.readdirSync(CARPETA);
