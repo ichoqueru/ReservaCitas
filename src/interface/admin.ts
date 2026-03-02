@@ -24,13 +24,6 @@ rl.question("Seleccione opción: ", (opcion) => {
         return;
       }
 
-      const dia = new Date(fecha + "T00:00:00").getDay();
-      if (dia == 0) {
-        console.log("\n La fecha de reserva no puede ser domingo");
-        rl.close();
-        return;
-      }
-
       GestorFecha.guardarConfiguracion(fecha);
       console.log(`\n Fecha de reserva configurado: ${GestorFecha.nombreDia(fecha)} ${fecha}`);
 

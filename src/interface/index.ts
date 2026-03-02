@@ -164,6 +164,14 @@ function reservarCita() {
                   return;
                 }
 
+                if (GestorCitas.tieneCitaDuplicada(paciente.dni, medicoAsignado.nombre, fecha)) {
+                  console.log(`\n Ya tienes una cita de Medicina General el ${GestorFecha.nombreDia(fecha)}.`);
+                  console.log("Seleccione otro día:\n");
+                  diasDisponibles.forEach((dia, i) => console.log(`${i + 1}. ${GestorFecha.nombreDia(dia)} ${dia}`));
+                  elegirFechaMG();
+                  return;
+                }
+
                 console.log("\n=== RESUMEN DE LA CITA ===");
                 console.log(`Paciente:     ${paciente.nombre}`);
                 console.log(`Doctor:       ${medicoAsignado.nombre}`);
@@ -267,6 +275,14 @@ function reservarCita() {
 
                       if (!fecha) {
                         console.log("\n Día inválido, intente de nuevo:");
+                        diasDisponibles.forEach((dia, i) => console.log(`${i + 1}. ${GestorFecha.nombreDia(dia)} ${dia}`));
+                        elegirFecha();
+                        return;
+                      }
+
+                      if (GestorCitas.tieneCitaDuplicada(paciente.dni, medico.nombre, fecha)) {
+                        console.log(`\n Ya tienes una cita con ${medico.nombre} el ${GestorFecha.nombreDia(fecha)}.`);
+                        console.log("Seleccione otro día:\n");
                         diasDisponibles.forEach((dia, i) => console.log(`${i + 1}. ${GestorFecha.nombreDia(dia)} ${dia}`));
                         elegirFecha();
                         return;

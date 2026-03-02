@@ -106,6 +106,27 @@ export class GestorCitas {
     return false;
   }
 
+  static tieneCitaDuplicada(dni: string, nombreDoctor: string, fecha: string): boolean {
+  this.inicializar();
+  const archivos = fs.readdirSync(CARPETA);
+
+  for (const archivo of archivos) {
+    const ruta = path.join(CARPETA, archivo);
+    const lineas = fs.readFileSync(ruta, "utf-8").split("\n").filter(l => l.trim() !== "");
+
+    for (const linea of lineas) {
+      if (
+        linea.includes(`DNI: ${dni}`) &&
+        linea.includes(`Doctor: ${nombreDoctor}`) &&
+        linea.includes(`Fecha: ${fecha}`)
+      ) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
   static reiniciar(): void {
     if (!fs.existsSync(CARPETA)) return;
     const archivos = fs.readdirSync(CARPETA);
