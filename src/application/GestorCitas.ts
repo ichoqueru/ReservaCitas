@@ -94,15 +94,34 @@ export class GestorCitas {
       const index = lineas.findIndex(l => l.includes(`DNI: ${dni}`));
 
       if (index !== -1) {
-        lineas[index] = lineas[index]!
-          .replace(/Fecha: \S+/, `Fecha: ${nuevaFecha}`)
-          .replace(/Hora: \S+/, `Hora: ${nuevaHora}`)
-          .replace(/Estado: \S+/, `Estado: REPROGRAMADA`);
+      const lineaAnterior = lineas[index]!;
 
-        fs.writeFileSync(ruta, lineas.join("\n") + "\n", "utf-8");
-        return true;
+      // Extraer turno y especialidad de la cita anterior
+      const especialidadMatch = lineaAnterior.match(/Especialidad: ([^|]+)\|/);
+      const especialidad = especialidadMatch ? especialidadMatch[1]!.trim() : null;
+
+      // Actualizar la línea con nueva fecha, hora y estado
+      lineas[index] = lineaAnterior
+        .replace(/Fecha: \S+/, `Fecha: ${nuevaFecha}`)
+        .replace(/Hora: \S+/, `Hora: ${nuevaHora}`)
+        .replace(/Estado: \S+/, `Estado: REPROGRAMADA`);
+
+      fs.writeFileSync(ruta, lineas.join("\n") + "\n", "utf-8");
+
+      // Si cambió de especialidad guardar en archivo correcto
+      if (especialidad) {
+        const nuevoArchivo = especialidad.normalize("NFD").replace(/[\u0300-\u036f]/g, "") + ".txt";
+        const rutaNueva = path.join(CARPETA, nuevoArchivo);
+        if (rutaNueva !== ruta) {
+          fs.appendFileSync(rutaNueva, lineas[index] + "\n", "utf-8");
+          lineas.splice(index, 1);
+          fs.writeFileSync(ruta, lineas.join("\n") + "\n", "utf-8");
+        }
       }
+
+      return true;
     }
+  }
     return false;
   }
 
