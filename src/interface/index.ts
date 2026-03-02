@@ -367,8 +367,26 @@ function reprogramarCita() {
       return;
     }
 
+    const linea = resultado.linea;
+    const dniMatch = linea.match(/DNI: ([^|]+)\|/);
+    const pacienteMatch = linea.match(/Paciente: ([^|]+)\|/);
+    const doctorMatch = linea.match(/Doctor: ([^|]+)\|/);
+    const especialidadMatch = linea.match(/Especialidad: ([^|]+)\|/);
+    const turnoMatch = linea.match(/Turno: ([^|]+)\|/);
+    const fechaMatch = linea.match(/Fecha: (\S+)/);
+    const horaMatch = linea.match(/Hora: (\d{2}:\d{2})/);
+    const estadoMatch = linea.match(/Estado: (\S+)/);
+
+    const fechaCita = fechaMatch ? fechaMatch[1]! : "";
+
     console.log("\n Cita encontrada:");
-    console.log(resultado.linea);
+    console.log(`Paciente:     ${pacienteMatch ? pacienteMatch[1]!.trim() : "?"}`);
+    console.log(`Doctor:       ${doctorMatch ? doctorMatch[1]!.trim() : "?"}`);
+    console.log(`Especialidad: ${especialidadMatch ? especialidadMatch[1]!.trim() : "?"}`);
+    console.log(`Turno:        ${turnoMatch ? turnoMatch[1]!.trim() : "?"}`);
+    console.log(`Fecha:        ${fechaCita ? GestorFecha.nombreDia(fechaCita) + " " + fechaCita : "?"}`);
+    console.log(`Hora:         ${horaMatch ? horaMatch[1] : "?"}`);
+    console.log(`Estado:       ${estadoMatch ? estadoMatch[1] : "?"}`);
 
     const datos = GestorCitas.obtenerDatosCita(dni);
     if (!datos) {
