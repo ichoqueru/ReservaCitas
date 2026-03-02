@@ -10,7 +10,9 @@ export class GestorFecha {
 
   static obtenerFechaReserva(): string | null {
     if (!fs.existsSync(ARCHIVO_FECHA)) return null;
-    return fs.readFileSync(ARCHIVO_FECHA, "utf-8").trim();
+    const contenido = fs.readFileSync(ARCHIVO_FECHA, "utf-8").trim();
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(contenido)) return null;
+      return contenido;
   }
 
   static esDiaDeReserva(): boolean {
