@@ -417,7 +417,17 @@ function reprogramarCita() {
         }
 
         const nuevaHora = disponibles[0]!;
+
+        if (GestorCitas.tieneCitaDuplicada(dni, medicoEncontrado.nombre, nuevaFecha)) {
+          console.log(`\n Ya tienes una cita con ${medicoEncontrado.nombre} el ${GestorFecha.nombreDia(nuevaFecha)}.`);
+          console.log("Seleccione otro día:\n");
+          diasDisponibles.forEach((dia, i) => console.log(`${i + 1}. ${GestorFecha.nombreDia(dia)} ${dia}`));
+          elegirNuevaFecha();
+          return;
+        }
+        
         console.log(`\n Horario asignado automáticamente: ${nuevaHora}`);
+
 
         console.log("\n=== RESUMEN DE REPROGRAMACIÓN ===");
         console.log(`Doctor:      ${medicoEncontrado.nombre}`);
@@ -430,12 +440,12 @@ function reprogramarCita() {
           if (respuesta.trim().toLowerCase() === "si") {
             const exito = GestorReprogramacion.reprogramar(dni, nuevaFecha, nuevaHora);
             if (exito) {
-              console.log("\n Cita reprogramada correctamente.");
+              console.log("\n Cita reprogramada correctamente");
             } else {
-              console.log("\n No se pudo reprogramar la cita.");
+              console.log("\n No se pudo reprogramar la cita");
             }
           } else {
-            console.log("\n Reprogramación cancelada.");
+            console.log("\n Reprogramación cancelada");
           }
 
           rl.close();

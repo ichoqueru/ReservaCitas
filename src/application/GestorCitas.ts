@@ -39,10 +39,6 @@ export class GestorCitas {
   }
 
 
-  static contarCitasPorDoctor(nombreDoctor: string, fecha: string): number {
-    return this.horariosOcupados(nombreDoctor, fecha).length;
-  }
-
   static buscarCitaPorDNI(dni: string): { linea: string, archivo: string } | null {
     this.inicializar();
     const archivos = fs.readdirSync(CARPETA);
