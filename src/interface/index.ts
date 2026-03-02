@@ -121,88 +121,109 @@ function reservarCita() {
             }
 
             const turnoSeleccionado = opcionTurno.trim() === "1" ? Turno.MAÑANA : Turno.TARDE;
-            const medicosMG = medicos.filter(med => med.especialidad.nombre === "Medicina General");
+            const medicosMG = medicos.filter(
+              med => med.especialidad.nombre === "Medicina General" &&
+              med.turno.nombre === turnoSeleccionado.nombre
+            );
 
-            console.log("\nDías disponibles:");
-            diasDisponibles.forEach((dia, i) => {
-              console.log(`${i + 1}. ${GestorFecha.nombreDia(dia)} ${dia}`);
-            });
+            if (medicosMG.length === 0) {
+              console.log(`\n No hay médicos disponibles para Medicina General en el turno ${turnoSeleccionado.nombre}`);
+              rl.close();
+              return;
+            }
 
-            const elegirFechaMG = () => {
-              rl.question("Seleccione día: ", (opcionDia) => {
-                if (cancelar(opcionDia)) return;
+            console.log(`\nMédicos disponibles (Medicina General - Turno ${turnoSeleccionado.nombre}):`);
+            medicosMG.forEach((med, i) => console.log(`${i + 1}. ${med.nombre}`));
 
-                const fecha = diasDisponibles[Number(opcionDia) - 1];
+            const elegirMedicoMG = () => {
+              rl.question("Seleccione médico: ", (opcionMedico) => {
+                if (cancelar(opcionMedico)) return;
 
-                if (!fecha) {
-                  console.log("\n Día inválido, intente de nuevo:");
-                  diasDisponibles.forEach((dia, i) => console.log(`${i + 1}. ${GestorFecha.nombreDia(dia)} ${dia}`));
-                  elegirFechaMG();
+                const medicoAsignado = medicosMG[Number(opcionMedico) - 1];
+
+                if (!medicoAsignado) {
+                  console.log("\n Médico inválido, intente de nuevo:");
+                  medicosMG.forEach((med, i) => console.log(`${i + 1}. ${med.nombre}`));
+                  elegirMedicoMG();
                   return;
                 }
 
-                let medicoAsignado = null;
-                let horaAsignada = null;
-
-                for (const med of medicosMG) {
-                  const todosHorarios = med.horariosPorTurno(turnoSeleccionado);
-                  const ocupados = GestorCitas.horariosOcupados(med.nombre, fecha);
-                  const disponibles = todosHorarios.filter(h => !ocupados.includes(h));
-
-                  if (disponibles.length > 0) {
-                    medicoAsignado = med;
-                    horaAsignada = disponibles[0]!;
-                    break;
-                  }
-                }
-
-                if (!medicoAsignado || !horaAsignada) {
-                  console.log(`\n No hay horarios disponibles para el ${GestorFecha.nombreDia(fecha)}.`);
-                  console.log("Seleccione otro día:\n");
-                  diasDisponibles.forEach((dia, i) => console.log(`${i + 1}. ${GestorFecha.nombreDia(dia)} ${dia}`));
-                  elegirFechaMG();
-                  return;
-                }
-
-                if (GestorCitas.tieneCitaDuplicada(paciente.dni, medicoAsignado.nombre, fecha)) {
-                  console.log(`\n Ya tienes una cita de Medicina General el ${GestorFecha.nombreDia(fecha)}.`);
-                  console.log("Seleccione otro día:\n");
-                  diasDisponibles.forEach((dia, i) => console.log(`${i + 1}. ${GestorFecha.nombreDia(dia)} ${dia}`));
-                  elegirFechaMG();
-                  return;
-                }
-
-                console.log("\n=== RESUMEN DE LA CITA ===");
-                console.log(`Paciente:     ${paciente.nombre}`);
-                console.log(`Doctor:       ${medicoAsignado.nombre}`);
-                console.log(`Tipo:         Medicina General`);
-                console.log(`Turno:        ${turnoSeleccionado.nombre}`);
-                console.log(`Fecha:        ${GestorFecha.nombreDia(fecha)} ${fecha}`);
-                console.log(`Hora:         ${horaAsignada}`);
-
-                rl.question("\n¿Confirma la cita? (si/no): ", (respuesta) => {
-                  if (cancelar(respuesta)) return;
-
-                  if (normalizar(respuesta.trim()) === "si") {
-                    const cita = new CitaMedica(
-                      paciente,
-                      medicoAsignado!,
-                      fecha,
-                      horaAsignada!,
-                      EstadoCita.PROGRAMADA,
-                      turnoSeleccionado.nombre
-                    );
-                    Notificacion.enviar(cita);
-                  } else {
-                    console.log("\n Cita cancelada.");
-                  }
-
-                  rl.close();
+                console.log("\nDías disponibles:");
+                diasDisponibles.forEach((dia, i) => {
+                  console.log(`${i + 1}. ${GestorFecha.nombreDia(dia)} ${dia}`);
                 });
+
+                const elegirFechaMG = () => {
+                  rl.question("Seleccione día: ", (opcionDia) => {
+                    if (cancelar(opcionDia)) return;
+
+                    const fecha = diasDisponibles[Number(opcionDia) - 1];
+
+                    if (!fecha) {
+                      console.log("\n Día inválido, intente de nuevo:");
+                      diasDisponibles.forEach((dia, i) => console.log(`${i + 1}. ${GestorFecha.nombreDia(dia)} ${dia}`));
+                      elegirFechaMG();
+                      return;
+                    }
+
+                    if (GestorCitas.tieneCitaDuplicada(paciente.dni, medicoAsignado.nombre, fecha)) {
+                      console.log(`\n Ya tienes una cita con ${medicoAsignado.nombre} el ${GestorFecha.nombreDia(fecha)}.`);
+                      console.log("Seleccione otro día:\n");
+                      diasDisponibles.forEach((dia, i) => console.log(`${i + 1}. ${GestorFecha.nombreDia(dia)} ${dia}`));
+                      elegirFechaMG();
+                      return;
+                    }
+
+                    const todosHorarios = medicoAsignado.horariosPorTurno(turnoSeleccionado);
+                    const ocupados = GestorCitas.horariosOcupados(medicoAsignado.nombre, fecha);
+                    const disponibles = todosHorarios.filter(h => !ocupados.includes(h));
+
+                    if (disponibles.length === 0) {
+                      console.log(`\n No hay horarios disponibles para el ${GestorFecha.nombreDia(fecha)}.`);
+                      console.log("Seleccione otro día:\n");
+                      diasDisponibles.forEach((dia, i) => console.log(`${i + 1}. ${GestorFecha.nombreDia(dia)} ${dia}`));
+                      elegirFechaMG();
+                      return;
+                    }
+
+                    const horaAsignada = disponibles[0]!;
+                    console.log(`\n Horario asignado automáticamente: ${horaAsignada}`);
+
+                    console.log("\n=== RESUMEN DE LA CITA ===");
+                    console.log(`Paciente:     ${paciente.nombre}`);
+                    console.log(`Doctor:       ${medicoAsignado.nombre}`);
+                    console.log(`Tipo:         Medicina General`);
+                    console.log(`Turno:        ${turnoSeleccionado.nombre}`);
+                    console.log(`Fecha:        ${GestorFecha.nombreDia(fecha)} ${fecha}`);
+                    console.log(`Hora:         ${horaAsignada}`);
+
+                    rl.question("\n¿Confirma la cita? (si/no): ", (respuesta) => {
+                      if (cancelar(respuesta)) return;
+
+                      if (normalizar(respuesta.trim()) === "si") {
+                        const cita = new CitaMedica(
+                          paciente,
+                          medicoAsignado,
+                          fecha,
+                          horaAsignada,
+                          EstadoCita.PROGRAMADA,
+                          turnoSeleccionado.nombre
+                        );
+                        Notificacion.enviar(cita);
+                      } else {
+                        console.log("\n Cita cancelada.");
+                      }
+
+                      rl.close();
+                    });
+                  });
+                };
+
+                elegirFechaMG();
               });
             };
 
-            elegirFechaMG();
+            elegirMedicoMG();
           });
 
         } else {
@@ -237,11 +258,13 @@ function reservarCita() {
               const turnoSeleccionado = opcionTurno.trim() === "1" ? Turno.MAÑANA : Turno.TARDE;
 
               const medicosDisponibles = medicos.filter(
-                (med) => normalizar(med.especialidad.nombre) === normalizar(especialidad.nombre)
+                (med) =>
+                  normalizar(med.especialidad.nombre) === normalizar(especialidad.nombre) &&
+                  med.turno.nombre === turnoSeleccionado.nombre
               );
 
               if (medicosDisponibles.length === 0) {
-                console.log(`\n No hay médicos disponibles para ${especialidad.nombre}`);
+                console.log(`\n No hay médicos disponibles para ${especialidad.nombre} en el turno ${turnoSeleccionado.nombre}`);
                 rl.close();
                 return;
               }
@@ -368,7 +391,6 @@ function reprogramarCita() {
     }
 
     const linea = resultado.linea;
-    const dniMatch = linea.match(/DNI: ([^|]+)\|/);
     const pacienteMatch = linea.match(/Paciente: ([^|]+)\|/);
     const doctorMatch = linea.match(/Doctor: ([^|]+)\|/);
     const especialidadMatch = linea.match(/Especialidad: ([^|]+)\|/);
@@ -426,14 +448,6 @@ function reprogramarCita() {
         const ocupados = GestorCitas.horariosOcupados(medicoEncontrado.nombre, nuevaFecha);
         const disponibles = todosHorarios.filter(h => !ocupados.includes(h));
 
-        if (disponibles.length === 0) {
-          console.log(`\n No hay horarios disponibles para el ${GestorFecha.nombreDia(nuevaFecha)}.`);
-          console.log("Seleccione otro día:\n");
-          diasDisponibles.forEach((dia, i) => console.log(`${i + 1}. ${GestorFecha.nombreDia(dia)} ${dia}`));
-          elegirNuevaFecha();
-          return;
-        }
-
         const nuevaHora = disponibles[0]!;
 
         if (GestorCitas.tieneCitaDuplicada(dni, medicoEncontrado.nombre, nuevaFecha)) {
@@ -443,9 +457,16 @@ function reprogramarCita() {
           elegirNuevaFecha();
           return;
         }
-        
-        console.log(`\n Horario asignado automáticamente: ${nuevaHora}`);
 
+        if (disponibles.length === 0) {
+          console.log(`\n No hay horarios disponibles para el ${GestorFecha.nombreDia(nuevaFecha)}.`);
+          console.log("Seleccione otro día:\n");
+          diasDisponibles.forEach((dia, i) => console.log(`${i + 1}. ${GestorFecha.nombreDia(dia)} ${dia}`));
+          elegirNuevaFecha();
+          return;
+        }
+
+        console.log(`\n Horario asignado automáticamente: ${nuevaHora}`);
 
         console.log("\n=== RESUMEN DE REPROGRAMACIÓN ===");
         console.log(`Doctor:      ${medicoEncontrado.nombre}`);
@@ -458,12 +479,12 @@ function reprogramarCita() {
           if (respuesta.trim().toLowerCase() === "si") {
             const exito = GestorReprogramacion.reprogramar(dni, nuevaFecha, nuevaHora);
             if (exito) {
-              console.log("\n Cita reprogramada correctamente");
+              console.log("\n Cita reprogramada correctamente.");
             } else {
-              console.log("\n No se pudo reprogramar la cita");
+              console.log("\n No se pudo reprogramar la cita.");
             }
           } else {
-            console.log("\n Reprogramación cancelada");
+            console.log("\n Reprogramación cancelada.");
           }
 
           rl.close();

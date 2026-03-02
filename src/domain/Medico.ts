@@ -5,7 +5,8 @@ export class Medico {
     constructor(
         public id: number,
         public nombre: string,
-        public especialidad: Especialidad
+        public especialidad: Especialidad,
+        public turno: Turno
     ) {}
 
     horariosPorTurno(turno: Turno): string[] {
