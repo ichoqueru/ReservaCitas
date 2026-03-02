@@ -9,7 +9,6 @@ import { GestorFecha } from "../application/GestorFecha";
 import { ListaMedicos } from "../data/ListaMedicos";
 import { GestorCancelacion } from "../application/GestorCancelacion";
 import { GestorReprogramacion } from "../application/GestorReprogramacion";
-import { GestorLimite } from "../application/GestorLimite";
 import { GestorCitas } from "../application/GestorCitas";
 
 const rl = readline.createInterface({
@@ -271,18 +270,6 @@ function reservarCita() {
                         diasDisponibles.forEach((dia, i) => console.log(`${i + 1}. ${GestorFecha.nombreDia(dia)} ${dia}`));
                         elegirFecha();
                         return;
-                      }
-
-                      const limite = GestorLimite.obtenerLimite();
-                      if (limite !== null) {
-                        const citasActuales = GestorCitas.contarCitasPorDoctor(medico.nombre, fecha);
-                        if (citasActuales >= limite) {
-                          console.log(`\n No hay horarios disponibles para el ${GestorFecha.nombreDia(fecha)}.`);
-                          console.log("Seleccione otro día:\n");
-                          diasDisponibles.forEach((dia, i) => console.log(`${i + 1}. ${GestorFecha.nombreDia(dia)} ${dia}`));
-                          elegirFecha();
-                          return;
-                        }
                       }
 
                       const todosHorarios = medico.horariosPorTurno(turnoSeleccionado);

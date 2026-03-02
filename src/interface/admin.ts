@@ -1,7 +1,6 @@
 import * as readline from "readline";
 import { GestorFecha } from "../application/GestorFecha";
 import { GestorCitas } from "../application/GestorCitas";
-import { GestorLimite } from "../application/GestorLimite";
 
 const rl = readline.createInterface({
   input: process.stdin,
@@ -13,7 +12,6 @@ console.log("=== PANEL DE ADMINISTRACIÓN ===\n");
 console.log("1. Configurar nueva semana (reiniciar citas + nueva fecha)");
 console.log("2. Solo cambiar fecha de inicio");
 console.log("3. Solo reiniciar citas\n");
-console.log("4. Configurar límite de paciente por doctor\n");
 
 rl.question("Seleccione opción: ", (opcion) => {
 
@@ -53,27 +51,7 @@ rl.question("Seleccione opción: ", (opcion) => {
       rl.close();
     });
 
-    } else if (opcion === "4") {
-    const limiteActual = GestorLimite.obtenerLimite();
-    if (limiteActual) {
-      console.log(`\n Límite actual: ${limiteActual} pacientes por doctor`);
-    }
-
-    rl.question("Ingrese nuevo límite de pacientes por doctor: ", (limite) => {
-      const numero = parseInt(limite.trim());
-
-      if (isNaN(numero) || numero <= 0) {
-        console.log("\n Límite inválido, debe ser un número mayor a 0");
-        rl.close();
-        return;
-      }
-
-      GestorLimite.guardarLimite(numero);
-      console.log(`\n Límite configurado: ${numero} pacientes por doctor`);
-      rl.close();
-    });
-
-  } else {
+    } else {
     console.log("\n Opción inválida");
     rl.close();
   }
