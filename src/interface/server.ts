@@ -160,15 +160,16 @@ app.get("/api/citas/:dni", async (req, res) => {
 
 app.post("/api/citas", async (req, res) => {
   const { dni, nombre, medicoId, fecha } = req.body;
+  const hoy = new Date().toISOString().split('T')[0]; // ✅ fecha de hoy
   if (!configuracionReservas.habilitado) {
     return res.status(403).json({ error: "⚠️ Las reservas están deshabilitadas por el administrador." });
   }
   if (
     configuracionReservas.fechaPermitida &&
-    configuracionReservas.fechaPermitida !== fecha
+    configuracionReservas.fechaPermitida !== hoy // ✅ compara con hoy, no con la fecha de la cita
   ) {
     return res.status(403).json({
-      error: `⚠️ Solo se puede reservar para la fecha ${configuracionReservas.fechaPermitida}.`
+      error: `⚠️ Solo se puede reservar el día ${configuracionReservas.fechaPermitida}.`
     });
   }
 
