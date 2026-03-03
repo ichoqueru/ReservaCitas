@@ -13,7 +13,10 @@ import { Notificacion } from "../application/Notificacion";
 import { JsonFileDb } from "../infrastructure/storage/JsonFileDb";
 
 const DATA_PATH = process.env.DATA_PATH || "./data";
-const dbConfig = new JsonFileDb<{ habilitado: boolean, diaPermitido: number | null }>(`${DATA_PATH}/config.json`)
+const dbConfig = new JsonFileDb<{
+  habilitado: boolean;
+  fechaPermitida: string | null;
+}>(`${DATA_PATH}/config.json`);
 const app = express();
 const PORT = process.env.PORT || 3000;
 
@@ -24,20 +27,29 @@ app.use(express.static(path.join(process.cwd(), "public")));
 // ══════════════════════════════════════════════════════════════════════════════
 // CONFIGURACIÓN DEL SISTEMA
 // ══════════════════════════════════════════════════════════════════════════════
-async function cargarConfiguracionInicial() {
+async function cargarConfiguracionInicial(): Promise<{
+  habilitado: boolean;
+  fechaPermitida: string | null;
+}> {
   try {
     const datos = await dbConfig.leerTodo();
     if (datos.length > 0) {
-      return { habilitado: datos[0]!.habilitado, diaPermitido: datos[0]!.diaPermitido };
+      return {
+        habilitado: datos[0]!.habilitado,
+        fechaPermitida: datos[0]!.fechaPermitida ?? null
+      };
     }
   } catch {}
-  const dias = await GestorFecha.obtenerDiasDisponibles();
-  if (dias.length === 0) return { habilitado: false, diaPermitido: null as number | null };
-  const primerDia = new Date(dias[0]! + "T12:00:00").getDay();
-  return { habilitado: true, diaPermitido: primerDia as number | null };
-}
 
-let configuracionReservas = { habilitado: false, diaPermitido: null as number | null };
+  return {
+    habilitado: false,
+    fechaPermitida: null
+  };
+}
+let configuracionReservas = {
+  habilitado: false,
+  fechaPermitida: null as string | null
+};
 
 cargarConfiguracionInicial().then(config => {
   configuracionReservas = config;
@@ -89,17 +101,26 @@ app.get("/api/fechas", async (req, res) => {
 // RUTA ADMIN - CONFIGURAR RESERVAS
 // ══════════════════════════════════════════════════════════════════════════════
 app.put("/api/admin/configurar-reservas", async (req, res) => {
-  const { habilitado, dia } = req.body;
+  const { habilitado, fechaPermitida } = req.body;
+
   configuracionReservas.habilitado = habilitado;
-  configuracionReservas.diaPermitido = dia;
-  await dbConfig.guardarTodo([{ habilitado, diaPermitido: dia }]);
-  res.json({ mensaje: "Configuración actualizada correctamente", configuracionReservas });
-});
+  configuracionReservas.fechaPermitida = fechaPermitida ?? null;
 
+  await dbConfig.guardarTodo([
+    {
+      habilitado,
+      fechaPermitida: fechaPermitida ?? null
+    }
+  ]);
+
+  res.json({
+    mensaje: "Configuración actualizada correctamente",
+    configuracionReservas
+  });
+});
 app.get("/api/configuracion", (req, res) => {
-  res.json({ habilitado: configuracionReservas.habilitado, diaPermitido: configuracionReservas.diaPermitido });
+  res.json(configuracionReservas);
 });
-
 // ══════════════════════════════════════════════════════════════════════════════
 // RUTAS DE CITAS
 // ══════════════════════════════════════════════════════════════════════════════
@@ -123,16 +144,21 @@ app.get("/api/citas/:dni", async (req, res) => {
 });
 
 app.post("/api/citas", async (req, res) => {
+   const { dni, nombre, medicoId, fecha } = req.body;
   const hoy = new Date().getDay();
   if (!configuracionReservas.habilitado) {
     return res.status(403).json({ error: "⚠️ Las reservas están deshabilitadas por el administrador." });
   }
-  if (configuracionReservas.diaPermitido !== null && configuracionReservas.diaPermitido !== hoy) {
-    const diasNombre: Record<number, string> = { 0:"Domingo", 1:"Lunes", 2:"Martes", 3:"Miércoles", 4:"Jueves", 5:"Viernes", 6:"Sábado" };
-    return res.status(403).json({ error: `⚠️ Hoy no se puede reservar. El día habilitado es ${diasNombre[configuracionReservas.diaPermitido]}.` });
-  }
+  if (
+  configuracionReservas.fechaPermitida &&
+  configuracionReservas.fechaPermitida !== fecha
+) {
+  return res.status(403).json({
+    error: `⚠️ Solo se puede reservar para la fecha ${configuracionReservas.fechaPermitida}.`
+  });
+}
 
-  const { dni, nombre, medicoId, fecha } = req.body;
+ 
   if (!dni || !/^\d{8}$/.test(dni)) return res.status(400).json({ error: "DNI inválido" });
   if (!nombre || !nombre.trim()) return res.status(400).json({ error: "El nombre no puede estar vacío" });
   if (!medicoId) return res.status(400).json({ error: "Debe seleccionar un médico" });

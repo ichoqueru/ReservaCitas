@@ -46,7 +46,7 @@ rl.question("Seleccione opción: ", (opcion) => {
         await fetch("https://reservacitas-production-03b4.up.railway.app/api/admin/configurar-reservas", {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ habilitado: true, dia: diaSemana })
+          body: JSON.stringify({ habilitado: true, fecha })
         });
         console.log(` Reservas habilitadas para: ${GestorFecha.nombreDia(fecha)}`);
       } catch {
