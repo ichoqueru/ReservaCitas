@@ -1,4 +1,4 @@
-const API = "https://reservacitas-production-03b4.up.railway.app";
+const API = "https://reservacitas-production.up.railway.app";
 let configuracionReservas = { habilitado: true, diaPermitido: null };
 
 async function obtenerConfiguracion() {
