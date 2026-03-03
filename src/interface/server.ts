@@ -10,7 +10,9 @@ import { Paciente } from "../domain/Paciente";
 import { CitaMedica } from "../domain/CitaMedica";
 import { EstadoCita } from "../domain/EstadoCita";
 import { Notificacion } from "../application/Notificacion";
+import { JsonFileDb } from "../infrastructure/storage/JsonFileDb";
 
+const dbConfig = new JsonFileDb<{ habilitado: boolean, diaPermitido: number | null }>("./data/config.json");
 const app = express();
 const PORT = process.env.PORT || 3000;
 
@@ -23,16 +25,14 @@ app.use(express.static(path.join(process.cwd(), "public")));
 // ══════════════════════════════════════════════════════════════════════════════
 async function cargarConfiguracionInicial() {
   try {
-    const { JsonFileDb } = await import("../infrastructure/storage/JsonFileDb");
-    const dbConfig = new JsonFileDb<any>("./data/config.json");
     const datos = await dbConfig.leerTodo();
     if (datos.length > 0) {
-      return { habilitado: datos[0].habilitado, diaPermitido: datos[0].diaPermitido as number | null };
+      return { habilitado: datos[0]!.habilitado, diaPermitido: datos[0]!.diaPermitido };
     }
   } catch {}
   const dias = await GestorFecha.obtenerDiasDisponibles();
   if (dias.length === 0) return { habilitado: false, diaPermitido: null as number | null };
-  const primerDia = new Date(dias[0] + "T12:00:00").getDay();
+  const primerDia = new Date(dias[0]! + "T12:00:00").getDay();
   return { habilitado: true, diaPermitido: primerDia as number | null };
 }
 
@@ -91,12 +91,7 @@ app.put("/api/admin/configurar-reservas", async (req, res) => {
   const { habilitado, dia } = req.body;
   configuracionReservas.habilitado = habilitado;
   configuracionReservas.diaPermitido = dia;
-
-  // Guardar en archivo para persistir
-  const { JsonFileDb } = await import("../infrastructure/storage/JsonFileDb");
-  const dbConfig = new JsonFileDb<any>("./data/config.json");
   await dbConfig.guardarTodo([{ habilitado, diaPermitido: dia }]);
-
   res.json({ mensaje: "Configuración actualizada correctamente", configuracionReservas });
 });
 
@@ -112,10 +107,6 @@ app.get("/api/citas", async (req, res) => {
   if (!fecha || !/^\d{4}-\d{2}-\d{2}$/.test(fecha)) {
     return res.status(400).json({ error: "Debe enviar una fecha válida (YYYY-MM-DD)" });
   }
-  const lista = await GestorCitas.buscarCitaPorDNI("") as any;
-  const todas = await (await import("../infrastructure/storage/JsonFileDb")).JsonFileDb;
-  // Leer todas las citas del JSON
-  const { JsonFileDb } = await import("../infrastructure/storage/JsonFileDb");
   const db = new JsonFileDb<any>("./data/citas.json");
   const citas = await db.leerTodo();
   const citasDelDia = citas.filter((c: any) => c.fecha === fecha);
