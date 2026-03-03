@@ -1,0 +1,1 @@
+{"version":3,"file":"GestorFecha.d.ts","sourceRoot":"","sources":["../../src/application/GestorFecha.ts"],"names":[],"mappings":"AAIA,qBAAa,WAAW;IAEtB,MAAM,CAAC,oBAAoB,CAAC,YAAY,EAAE,MAAM,GAAG,IAAI;IAIvD,MAAM,CAAC,mBAAmB,IAAI,MAAM,GAAG,IAAI;IAO3C,MAAM,CAAC,cAAc,IAAI,OAAO;IAYhC,MAAM,CAAC,sBAAsB,IAAI,MAAM,EAAE;IAiBzC,MAAM,CAAC,SAAS,CAAC,KAAK,EAAE,MAAM,GAAG,MAAM;CAKxC"}

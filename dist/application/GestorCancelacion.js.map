@@ -1,0 +1,1 @@
+{"version":3,"file":"GestorCancelacion.js","sourceRoot":"","sources":["../../src/application/GestorCancelacion.ts"],"names":[],"mappings":";;;AAAA,MAAa,iBAAiB;IAC1B,MAAM,CAAC,QAAQ;QACX,OAAO,CAAC,GAAG,CAAC,qCAAqC,CAAC,CAAC;IACvD,CAAC;IAED,MAAM,CAAC,aAAa,CAAC,KAAa;QAC9B,OAAO,KAAK,CAAC,IAAI,EAAE,CAAC,WAAW,EAAE,KAAK,UAAU,CAAC;IACrD,CAAC;CACJ;AARD,8CAQC"}
