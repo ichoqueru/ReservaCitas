@@ -1,46 +1,44 @@
 import * as fs from "fs";
+import { JsonFileDb } from "../infrastructure/storage/JsonFileDb";
 
-const ARCHIVO_FECHA = "./fecha.txt";
+const db = new JsonFileDb<{ fechaReserva: string }>("./data/fecha.json");
 
 export class GestorFecha {
 
-  static guardarConfiguracion(fechaReserva: string): void {
-    fs.writeFileSync(ARCHIVO_FECHA, fechaReserva, "utf-8");
+  static async guardarConfiguracion(fechaReserva: string): Promise<void> {
+    await db.guardarTodo([{ fechaReserva }]);
   }
 
-  static obtenerFechaReserva(): string | null {
-    if (!fs.existsSync(ARCHIVO_FECHA)) return null;
-    const contenido = fs.readFileSync(ARCHIVO_FECHA, "utf-8").trim();
-      if (!/^\d{4}-\d{2}-\d{2}$/.test(contenido)) return null;
-      return contenido;
+  static async obtenerFechaReserva(): Promise<string | null> {
+    const datos = await db.leerTodo();
+    if (datos.length === 0) return null;
+    const fecha = datos[0]!.fechaReserva;
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(fecha)) return null;
+    return fecha;
   }
 
-  static esDiaDeReserva(): boolean {
-    const fechaReserva = this.obtenerFechaReserva();
+  static async esDiaDeReserva(): Promise<boolean> {
+    const fechaReserva = await this.obtenerFechaReserva();
     if (!fechaReserva) return false;
     const hoy = new Date();
     const año = hoy.getFullYear();
     const mes = String(hoy.getMonth() + 1).padStart(2, "0");
     const dia = String(hoy.getDate()).padStart(2, "0");
     const hoyLocal = `${año}-${mes}-${dia}`;
-  
     return hoyLocal === fechaReserva;
   }
 
-  static obtenerDiasDisponibles(): string[] {
-    const inicio = this.obtenerFechaReserva();
+  static async obtenerDiasDisponibles(): Promise<string[]> {
+    const inicio = await this.obtenerFechaReserva();
     if (!inicio) return [];
-
     const dias: string[] = [];
     const fecha = new Date(inicio + "T00:00:00");
-    
     for (let i = 0; i < 6; i++) {
       const d = new Date(fecha);
       d.setDate(fecha.getDate() + i);
       const dia = d.toISOString().split("T")[0]!;
       dias.push(dia);
     }
-
     return dias;
   }
 

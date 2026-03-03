@@ -11,7 +11,7 @@ console.clear();
 console.log("=== PANEL DE ADMINISTRACIÓN ===\n");
 console.log("1. Configurar nueva semana (reiniciar citas + nueva fecha)");
 console.log("2. Solo cambiar fecha de inicio");
-console.log("3. Solo reiniciar citas\n");
+console.log("3. Solo reiniciar citas");
 console.log("4. Ver citas del día\n");
 
 rl.question("Seleccione opción: ", (opcion) => {
@@ -32,15 +32,15 @@ rl.question("Seleccione opción: ", (opcion) => {
       }
 
       if (!/^\d{4}-\d{2}-\d{2}$/.test(fecha)) {
-        console.log("\n Fecha inválida, use el formato YYYY-MM-DD (ej: 2026-02-23)");
+        console.log("\n Fecha inválida, use el formato YYYY-MM-DD");
         rl.close();
         return;
       }
 
-      GestorFecha.guardarConfiguracion(fecha);
-      console.log(`\n Fecha de reserva configurado: ${GestorFecha.nombreDia(fecha)} ${fecha}`);
+      await GestorFecha.guardarConfiguracion(fecha);
+      console.log(`\n Fecha de reserva configurada: ${GestorFecha.nombreDia(fecha)} ${fecha}`);
 
-      // Sincronizar día permitido con el servidor
+      // Sincronizar con el servidor
       const diaSemana = new Date(fecha + "T12:00:00").getDay();
       try {
         await fetch("https://reservacitas-production-03b4.up.railway.app/api/admin/configurar-reservas", {
@@ -54,16 +54,16 @@ rl.question("Seleccione opción: ", (opcion) => {
       }
 
       if (opcion === "1") {
-        GestorCitas.reiniciar();
+        await GestorCitas.reiniciar();
       }
 
       rl.close();
     });
 
   } else if (opcion === "3") {
-    rl.question("¿Está seguro que desea reiniciar todas las citas? (si/no): ", (respuesta) => {
+    rl.question("¿Está seguro que desea reiniciar todas las citas? (si/no): ", async (respuesta) => {
       if (respuesta.trim().toLowerCase() === "si") {
-        GestorCitas.reiniciar();
+        await GestorCitas.reiniciar();
       } else {
         console.log("\n Operación cancelada.");
       }
@@ -71,15 +71,14 @@ rl.question("Seleccione opción: ", (opcion) => {
     });
 
   } else if (opcion === "4") {
-    rl.question("Ingrese fecha a consultar (YYYY-MM-DD): ", (fecha) => {
+    rl.question("Ingrese fecha a consultar (YYYY-MM-DD): ", async (fecha) => {
       if (!/^\d{4}-\d{2}-\d{2}$/.test(fecha)) {
         console.log("\n Fecha inválida, use el formato YYYY-MM-DD");
         rl.close();
         return;
       }
-
       console.log(`\n=== CITAS DEL DÍA: ${GestorFecha.nombreDia(fecha)} ${fecha} ===`);
-      GestorCitas.verCitasDelDia(fecha);
+      await GestorCitas.verCitasDelDia(fecha);
       rl.close();
     });
 

@@ -9,24 +9,30 @@ import { GestorReprogramacion } from "../application/GestorReprogramacion";
 import { Paciente } from "../domain/Paciente";
 import { CitaMedica } from "../domain/CitaMedica";
 import { EstadoCita } from "../domain/EstadoCita";
-import { Turno } from "../domain/Turno";
 import { Notificacion } from "../application/Notificacion";
 
 const app = express();
-const PORT = Number(process.env.PORT) || 8080;
+const PORT = process.env.PORT || 3000;
 
 app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(process.cwd(), "public")));
 
-function cargarConfiguracionInicial(): { habilitado: boolean; diaPermitido: number | null } {
-  const dias = GestorFecha.obtenerDiasDisponibles();
-  if (dias.length === 0) return { habilitado: false, diaPermitido: null };
+// ══════════════════════════════════════════════════════════════════════════════
+// CONFIGURACIÓN DEL SISTEMA
+// ══════════════════════════════════════════════════════════════════════════════
+async function cargarConfiguracionInicial() {
+  const dias = await GestorFecha.obtenerDiasDisponibles();
+  if (dias.length === 0) return { habilitado: false, diaPermitido: null as number | null };
   const primerDia = new Date(dias[0] + "T12:00:00").getDay();
-  return { habilitado: true, diaPermitido: primerDia };
+  return { habilitado: true, diaPermitido: primerDia as number | null };
 }
 
-let configuracionReservas = cargarConfiguracionInicial();
+let configuracionReservas = { habilitado: false, diaPermitido: null as number | null };
+
+cargarConfiguracionInicial().then(config => {
+  configuracionReservas = config;
+});
 
 // ─── DATOS BASE ────────────────────────────────────────────────────────────────
 const especialidades = [
@@ -43,10 +49,7 @@ const medicos = ListaMedicos.obtener(especialidades, medicinaGeneral);
 // RUTAS DE ESPECIALIDADES
 // ══════════════════════════════════════════════════════════════════════════════
 app.get("/api/especialidades", (req, res) => {
-  const lista = [
-    ...especialidades.map((e) => e.nombre),
-    medicinaGeneral.nombre,
-  ];
+  const lista = [...especialidades.map((e) => e.nombre), medicinaGeneral.nombre];
   res.json(lista);
 });
 
@@ -54,53 +57,22 @@ app.get("/api/especialidades", (req, res) => {
 // RUTAS DE MÉDICOS
 // ══════════════════════════════════════════════════════════════════════════════
 app.get("/api/medicos", (req, res) => {
-  const { especialidad, turno } = req.query as {
-    especialidad?: string;
-    turno?: string;
-  };
-
+  const { especialidad, turno } = req.query as { especialidad?: string; turno?: string };
   const normalizar = (texto: string) =>
     texto.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-
   let resultado = medicos;
-
-  if (especialidad) {
-    resultado = resultado.filter(
-      (m) => normalizar(m.especialidad.nombre) === normalizar(especialidad)
-    );
-  }
-
-  if (turno) {
-    resultado = resultado.filter(
-      (m) => normalizar(m.turno.nombre) === normalizar(turno)
-    );
-  }
-
-  res.json(
-    resultado.map((m) => ({
-      id: m.id,
-      nombre: m.nombre,
-      especialidad: m.especialidad.nombre,
-      turno: m.turno.nombre,
-    }))
-  );
+  if (especialidad) resultado = resultado.filter(m => normalizar(m.especialidad.nombre) === normalizar(especialidad));
+  if (turno) resultado = resultado.filter(m => normalizar(m.turno.nombre) === normalizar(turno));
+  res.json(resultado.map(m => ({ id: m.id, nombre: m.nombre, especialidad: m.especialidad.nombre, turno: m.turno.nombre })));
 });
 
 // ══════════════════════════════════════════════════════════════════════════════
 // RUTAS DE FECHAS
 // ══════════════════════════════════════════════════════════════════════════════
-app.get("/api/fechas", (req, res) => {
-  const dias = GestorFecha.obtenerDiasDisponibles();
-
-  if (dias.length === 0) {
-    return res.status(404).json({ error: "No hay fechas configuradas aún" });
-  }
-
-  const diasConNombre = dias.map((d) => ({
-    fecha: d,
-    dia: GestorFecha.nombreDia(d),
-  }));
-
+app.get("/api/fechas", async (req, res) => {
+  const dias = await GestorFecha.obtenerDiasDisponibles();
+  if (dias.length === 0) return res.status(404).json({ error: "No hay fechas configuradas aún" });
+  const diasConNombre = dias.map(d => ({ fecha: d, dia: GestorFecha.nombreDia(d) }));
   res.json(diasConNombre);
 });
 
@@ -109,229 +81,120 @@ app.get("/api/fechas", (req, res) => {
 // ══════════════════════════════════════════════════════════════════════════════
 app.put("/api/admin/configurar-reservas", (req, res) => {
   const { habilitado, dia } = req.body;
-
   configuracionReservas.habilitado = habilitado;
   configuracionReservas.diaPermitido = dia;
-
-  res.json({
-    mensaje: "Configuración actualizada correctamente",
-    configuracionReservas
-  });
+  res.json({ mensaje: "Configuración actualizada correctamente", configuracionReservas });
 });
-// GET /api/configuracion → devuelve si está habilitado y el día permitido
+
 app.get("/api/configuracion", (req, res) => {
-  res.json({
-    habilitado: configuracionReservas.habilitado,
-    diaPermitido: configuracionReservas.diaPermitido // 0=domingo, 1=lunes, etc
-  });
+  res.json({ habilitado: configuracionReservas.habilitado, diaPermitido: configuracionReservas.diaPermitido });
 });
 
 // ══════════════════════════════════════════════════════════════════════════════
 // RUTAS DE CITAS
 // ══════════════════════════════════════════════════════════════════════════════
-
-// GET /api/citas?fecha=YYYY-MM-DD → lista citas de un día
-app.get("/api/citas", (req, res) => {
+app.get("/api/citas", async (req, res) => {
   const { fecha } = req.query as { fecha?: string };
-
   if (!fecha || !/^\d{4}-\d{2}-\d{2}$/.test(fecha)) {
-    return res
-      .status(400)
-      .json({ error: "Debe enviar una fecha válida (YYYY-MM-DD)" });
+    return res.status(400).json({ error: "Debe enviar una fecha válida (YYYY-MM-DD)" });
   }
-
-  const fs = require("fs");
-  const path = require("path");
-  const CARPETA = "./citas";
-
-  if (!fs.existsSync(CARPETA)) {
-    return res.json([]);
-  }
-
-  const archivos = fs.readdirSync(CARPETA).filter((a: string) => a.endsWith(".txt"));
-  const citasDelDia: object[] = [];
-
-  for (const archivo of archivos) {
-    const ruta = path.join(CARPETA, archivo);
-    const lineas: string[] = fs
-      .readFileSync(ruta, "utf-8")
-      .split("\n")
-      .filter((l: string) => l.trim() !== "");
-
-    for (const linea of lineas) {
-      if (linea.includes(`Fecha: ${fecha}`)) {
-        const dniMatch       = linea.match(/DNI: ([^|]+)\|/);
-        const pacienteMatch  = linea.match(/Paciente: ([^|]+)\|/);
-        const doctorMatch    = linea.match(/Doctor: ([^|]+)\|/);
-        const espMatch       = linea.match(/Especialidad: ([^|]+)\|/);
-        const turnoMatch     = linea.match(/Turno: ([^|]+)\|/);
-        const horaMatch      = linea.match(/Hora: (\d{2}:\d{2})/);
-        const estadoMatch    = linea.match(/Estado: (\S+)/);
-
-        citasDelDia.push({
-          dni:          dniMatch      ? dniMatch[1]!.trim()      : "?",
-          paciente:     pacienteMatch ? pacienteMatch[1]!.trim() : "?",
-          doctor:       doctorMatch   ? doctorMatch[1]!.trim()   : "?",
-          especialidad: espMatch      ? espMatch[1]!.trim()      : "?",
-          turno:        turnoMatch    ? turnoMatch[1]!.trim()    : "?",
-          fecha,
-          hora:         horaMatch     ? horaMatch[1]             : "?",
-          estado:       estadoMatch   ? estadoMatch[1]           : "?",
-        });
-      }
-    }
-  }
-
+  const lista = await GestorCitas.buscarCitaPorDNI("") as any;
+  const todas = await (await import("../infrastructure/storage/JsonFileDb")).JsonFileDb;
+  // Leer todas las citas del JSON
+  const { JsonFileDb } = await import("../infrastructure/storage/JsonFileDb");
+  const db = new JsonFileDb<any>("./data/citas.json");
+  const citas = await db.leerTodo();
+  const citasDelDia = citas.filter((c: any) => c.fecha === fecha);
   res.json(citasDelDia);
 });
 
-// GET /api/citas/:dni → busca la cita de un paciente por DNI
-app.get("/api/citas/:dni", (req, res) => {
+app.get("/api/citas/:dni", async (req, res) => {
   const { dni } = req.params;
-
-  if (!/^\d{8}$/.test(dni)) {
-    return res.status(400).json({ error: "DNI inválido (debe tener 8 dígitos)" });
-  }
-
-  const resultado = GestorCitas.buscarCitaPorDNI(dni);
-
-  if (!resultado) {
-    return res.status(404).json({ error: "No se encontró ninguna cita con ese DNI" });
-  }
-
-  const linea = resultado.linea;
-  const dniMatch       = linea.match(/DNI: ([^|]+)\|/);
-  const pacienteMatch  = linea.match(/Paciente: ([^|]+)\|/);
-  const doctorMatch    = linea.match(/Doctor: ([^|]+)\|/);
-  const espMatch       = linea.match(/Especialidad: ([^|]+)\|/);
-  const turnoMatch     = linea.match(/Turno: ([^|]+)\|/);
-  const fechaMatch     = linea.match(/Fecha: (\S+)/);
-  const horaMatch      = linea.match(/Hora: (\d{2}:\d{2})/);
-  const estadoMatch    = linea.match(/Estado: (\S+)/);
-
-  res.json({
-    dni:          dniMatch      ? dniMatch[1]!.trim()      : "?",
-    paciente:     pacienteMatch ? pacienteMatch[1]!.trim() : "?",
-    doctor:       doctorMatch   ? doctorMatch[1]!.trim()   : "?",
-    especialidad: espMatch      ? espMatch[1]!.trim()      : "?",
-    turno:        turnoMatch    ? turnoMatch[1]!.trim()    : "?",
-    fecha:        fechaMatch    ? fechaMatch[1]             : "?",
-    hora:         horaMatch     ? horaMatch[1]              : "?",
-    estado:       estadoMatch   ? estadoMatch[1]            : "?",
-  });
+  if (!/^\d{8}$/.test(dni)) return res.status(400).json({ error: "DNI inválido (debe tener 8 dígitos)" });
+  const cita = await GestorCitas.buscarCitaPorDNI(dni);
+  if (!cita) return res.status(404).json({ error: "No se encontró ninguna cita con ese DNI" });
+  res.json(cita);
 });
 
-// POST /api/citas → reservar una nueva cita
-app.post("/api/citas", (req, res) => {
-
-  //  VALIDACIÓN GLOBAL DEL SISTEMA
+app.post("/api/citas", async (req, res) => {
   const hoy = new Date().getDay();
-
   if (!configuracionReservas.habilitado) {
-    return res.status(403).json({
-      error: "⚠️ Las reservas están deshabilitadas por el administrador."
-    });
+    return res.status(403).json({ error: "⚠️ Las reservas están deshabilitadas por el administrador." });
   }
-
   if (configuracionReservas.diaPermitido !== null && configuracionReservas.diaPermitido !== hoy) {
-    const diasNombre: Record<number, string> = {
-      0: "Domingo",
-      1: "Lunes",
-      2: "Martes",
-      3: "Miércoles",
-      4: "Jueves",
-      5: "Viernes",
-      6: "Sábado",
-    };
-    return res.status(403).json({
-      error: `⚠️ Hoy no se puede reservar citas. El día habilitado para reservas es ${diasNombre[configuracionReservas.diaPermitido]}.`
-    });
+    const diasNombre: Record<number, string> = { 0:"Domingo", 1:"Lunes", 2:"Martes", 3:"Miércoles", 4:"Jueves", 5:"Viernes", 6:"Sábado" };
+    return res.status(403).json({ error: `⚠️ Hoy no se puede reservar. El día habilitado es ${diasNombre[configuracionReservas.diaPermitido]}.` });
   }
 
   const { dni, nombre, medicoId, fecha } = req.body;
+  if (!dni || !/^\d{8}$/.test(dni)) return res.status(400).json({ error: "DNI inválido" });
+  if (!nombre || !nombre.trim()) return res.status(400).json({ error: "El nombre no puede estar vacío" });
+  if (!medicoId) return res.status(400).json({ error: "Debe seleccionar un médico" });
+  if (!fecha || !/^\d{4}-\d{2}-\d{2}$/.test(fecha)) return res.status(400).json({ error: "Fecha inválida" });
 
-  // ── Validaciones
-  if (!dni || !/^\d{8}$/.test(dni)) {
-    return res.status(400).json({ error: "DNI inválido (debe tener 8 dígitos)" });
-  }
-  if (!nombre || !nombre.trim()) {
-    return res.status(400).json({ error: "El nombre no puede estar vacío" });
-  }
-  if (!medicoId) {
-    return res.status(400).json({ error: "Debe seleccionar un médico" });
-  }
-  if (!fecha || !/^\d{4}-\d{2}-\d{2}$/.test(fecha)) {
-    return res.status(400).json({ error: "Fecha inválida (use YYYY-MM-DD)" });
-  }
+  const medico = medicos.find(m => m.id === Number(medicoId));
+  if (!medico) return res.status(404).json({ error: "Médico no encontrado" });
 
-  // Buscar médico
-  const medico = medicos.find((m) => m.id === Number(medicoId));
-  if (!medico) {
-    return res.status(404).json({ error: "Médico no encontrado" });
+  const diasDisponibles = await GestorFecha.obtenerDiasDisponibles();
+  if (!diasDisponibles.includes(fecha)) return res.status(400).json({ error: "La fecha no está disponible" });
+
+  if (await GestorCitas.tieneCitaDuplicada(dni, medico.nombre, fecha)) {
+    return res.status(409).json({ error: `Ya tienes una cita con ${medico.nombre} el ${GestorFecha.nombreDia(fecha)}` });
   }
 
-  // Verificar que la fecha esté dentro de los días disponibles
-  const diasDisponibles = GestorFecha.obtenerDiasDisponibles();
-  if (!diasDisponibles.includes(fecha)) {
-    return res.status(400).json({ error: "La fecha no está disponible para reservas" });
-  }
-
-  // Verificar cita duplicada
-  if (GestorCitas.tieneCitaDuplicada(dni, medico.nombre, fecha)) {
-    return res.status(409).json({
-      error: `Ya tienes una cita con ${medico.nombre} el ${GestorFecha.nombreDia(fecha)}`,
-    });
-  }
-
-  // Buscar horario disponible
   const todosHorarios = medico.horariosPorTurno(medico.turno);
-  const ocupados      = GestorCitas.horariosOcupados(medico.nombre, fecha);
-  const disponibles   = todosHorarios.filter((h) => !ocupados.includes(h));
+  const ocupados = await GestorCitas.horariosOcupados(medico.nombre, fecha);
+  const disponibles = todosHorarios.filter(h => !ocupados.includes(h));
 
   if (disponibles.length === 0) {
-    return res.status(409).json({
-      error: `No hay horarios disponibles con ${medico.nombre} el ${GestorFecha.nombreDia(fecha)}`,
-    });
+    return res.status(409).json({ error: `No hay horarios disponibles con ${medico.nombre} el ${GestorFecha.nombreDia(fecha)}` });
   }
 
   const horaAsignada = disponibles[0]!;
-
-  // Crear y guardar la cita
   const paciente = new Paciente(dni, nombre.trim());
-  const cita = new CitaMedica(
-    paciente,
-    medico,
-    fecha,
-    horaAsignada,
-    EstadoCita.PROGRAMADA,
-    medico.turno.nombre
-  );
-
-  Notificacion.enviar(cita);
+  const cita = new CitaMedica(paciente, medico, fecha, horaAsignada, EstadoCita.PROGRAMADA, medico.turno.nombre);
+  await Notificacion.enviar(cita);
 
   res.status(201).json({
     mensaje: "Cita reservada correctamente",
-    cita: {
-      dni:          paciente.dni,
-      paciente:     paciente.nombre,
-      doctor:       medico.nombre,
-      especialidad: medico.especialidad.nombre,
-      turno:        medico.turno.nombre,
-      fecha,
-      hora:         horaAsignada,
-      estado:       EstadoCita.PROGRAMADA,
-    },
+    cita: { dni: paciente.dni, paciente: paciente.nombre, doctor: medico.nombre, especialidad: medico.especialidad.nombre, turno: medico.turno.nombre, fecha, hora: horaAsignada, estado: EstadoCita.PROGRAMADA }
   });
 });
 
-// PUT /api/citas/:dni/reprogramar → reprogramar una cita existente
-app.put("/api/citas/:dni/reprogramar", (req, res) => {
-  // ... Mantén todo exactamente igual que antes ...
+app.put("/api/citas/:dni/reprogramar", async (req, res) => {
+  const { dni } = req.params;
+  const { nuevaFecha } = req.body;
+  if (!/^\d{8}$/.test(dni)) return res.status(400).json({ error: "DNI inválido" });
+  if (!nuevaFecha) return res.status(400).json({ error: "Debe enviar una nueva fecha" });
+
+  const diasDisponibles = await GestorFecha.obtenerDiasDisponibles();
+  if (!diasDisponibles.includes(nuevaFecha)) return res.status(400).json({ error: "La fecha no está disponible" });
+
+  const cita = await GestorCitas.buscarCitaPorDNI(dni);
+  if (!cita) return res.status(404).json({ error: "No se encontró ninguna cita con ese DNI" });
+
+  const medico = medicos.find(m => m.nombre === cita.doctor);
+  if (!medico) return res.status(404).json({ error: "Médico no encontrado" });
+
+  const todosHorarios = medico.horariosPorTurno(medico.turno);
+  const ocupados = await GestorCitas.horariosOcupados(medico.nombre, nuevaFecha);
+  const disponibles = todosHorarios.filter(h => !ocupados.includes(h));
+
+  if (disponibles.length === 0) return res.status(409).json({ error: "No hay horarios disponibles para esa fecha" });
+
+  const nuevaHora = disponibles[0]!;
+  const exito = await GestorReprogramacion.reprogramar(dni, nuevaFecha, nuevaHora);
+  if (!exito) return res.status(500).json({ error: "No se pudo reprogramar la cita" });
+
+  res.json({ mensaje: "Cita reprogramada correctamente", nuevaFecha, nuevaHora, dia: GestorFecha.nombreDia(nuevaFecha) });
 });
 
-// PUT /api/citas/:dni/cancelar → cancelar una cita existente
-app.put("/api/citas/:dni/cancelar", (req, res) => {
-  // ... Mantén todo exactamente igual que antes ...
+app.put("/api/citas/:dni/cancelar", async (req, res) => {
+  const { dni } = req.params;
+  if (!/^\d{8}$/.test(dni)) return res.status(400).json({ error: "DNI inválido" });
+  const exito = await GestorCitas.cancelarCita(dni);
+  if (!exito) return res.status(400).json({ error: "No se pudo cancelar la cita o ya está cancelada" });
+  res.json({ mensaje: "Cita cancelada correctamente" });
 });
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -347,5 +210,6 @@ app.listen(PORT, () => {
   console.log("  GET    /api/citas/:dni");
   console.log("  POST   /api/citas");
   console.log("  PUT    /api/citas/:dni/reprogramar");
+  console.log("  PUT    /api/citas/:dni/cancelar");
   console.log("  PUT    /api/admin/configurar-reservas");
 });
