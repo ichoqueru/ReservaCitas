@@ -109,7 +109,24 @@ rl.question("Seleccione opción: ", (opcion) => {
         return;
       }
       console.log(`\n=== CITAS DEL DÍA: ${GestorFecha.nombreDia(fecha)} ${fecha} ===`);
-      await GestorCitas.verCitasDelDia(fecha);
+
+      // ✅ Consultar Railway en vez de local
+      try {
+        const res = await fetch(`https://reservacitas-production.up.railway.app/api/citas?fecha=${fecha}`);
+        const citas = await res.json();
+        if (!Array.isArray(citas) || citas.length === 0) {
+          console.log(" No hay citas para ese día.");
+        } else {
+          citas.forEach((c: any) => {
+            console.log(`\n  Paciente: ${c.paciente} | DNI: ${c.dni}`);
+            console.log(`  Doctor: ${c.doctor} | Especialidad: ${c.especialidad}`);
+            console.log(`  Turno: ${c.turno} | Hora: ${c.hora} | Estado: ${c.estado}`);
+          });
+        }
+      } catch {
+        console.log(" ⚠️ No se pudo conectar con el servidor.");
+      }
+
       rl.close();
     });
 
