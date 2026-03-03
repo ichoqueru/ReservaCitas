@@ -6,7 +6,7 @@ import { EstadoCita } from "../../domain/EstadoCita";
 import { Notificacion } from "../../application/Notificacion";
 import { Turno } from "../../domain/Turno";
 import { GestorFecha } from "../../application/GestorFecha";
-import { ListaMedicos } from "../../data/ListaMedicos";
+import { ListaMedicos } from "../../infrastructure/ListaMedicos";
 import { GestorCancelacion } from "../../application/GestorCancelacion";
 import { GestorReprogramacion } from "../../application/GestorReprogramacion";
 import { GestorCitas } from "../../application/GestorCitas";
