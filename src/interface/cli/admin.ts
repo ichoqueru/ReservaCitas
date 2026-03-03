@@ -40,8 +40,19 @@ rl.question("Seleccione opción: ", (opcion) => {
       await GestorFecha.guardarConfiguracion(fecha);
       console.log(`\n Fecha de reserva configurada: ${GestorFecha.nombreDia(fecha)} ${fecha}`);
 
-      // Sincronizar con el servidor
-      const diaSemana = new Date(fecha + "T12:00:00").getDay();
+      // ✅ Sincronizar fecha con Railway
+      try {
+        await fetch("https://reservacitas-production.up.railway.app/api/admin/configurar-fecha", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ fecha })
+        });
+        console.log(` Fecha sincronizada en Railway: ${fecha}`);
+      } catch {
+        console.log(" ⚠️ No se pudo sincronizar la fecha con el servidor.");
+      }
+
+      // ✅ Sincronizar configuración de reservas con Railway
       try {
         await fetch("https://reservacitas-production.up.railway.app/api/admin/configurar-reservas", {
           method: "PUT",

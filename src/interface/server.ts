@@ -118,10 +118,24 @@ app.put("/api/admin/configurar-reservas", async (req, res) => {
     configuracionReservas
   });
 });
+
+// ══════════════════════════════════════════════════════════════════════════════
+// RUTA ADMIN - CONFIGURAR FECHA ✅ NUEVA RUTA
+// ══════════════════════════════════════════════════════════════════════════════
+app.put("/api/admin/configurar-fecha", async (req, res) => {
+  const { fecha } = req.body;
+  if (!fecha || !/^\d{4}-\d{2}-\d{2}$/.test(fecha)) {
+    return res.status(400).json({ error: "Fecha inválida" });
+  }
+  await GestorFecha.guardarConfiguracion(fecha);
+  res.json({ mensaje: "Fecha configurada correctamente", fecha });
+});
+
 app.get("/api/configuracion", (req, res) => {
   console.log(configuracionReservas)
   res.json(configuracionReservas);
 });
+
 // ══════════════════════════════════════════════════════════════════════════════
 // RUTAS DE CITAS
 // ══════════════════════════════════════════════════════════════════════════════
@@ -145,21 +159,19 @@ app.get("/api/citas/:dni", async (req, res) => {
 });
 
 app.post("/api/citas", async (req, res) => {
-   const { dni, nombre, medicoId, fecha } = req.body;
-  const hoy = new Date().getDay();
+  const { dni, nombre, medicoId, fecha } = req.body;
   if (!configuracionReservas.habilitado) {
     return res.status(403).json({ error: "⚠️ Las reservas están deshabilitadas por el administrador." });
   }
   if (
-  configuracionReservas.fechaPermitida &&
-  configuracionReservas.fechaPermitida !== fecha
-) {
-  return res.status(403).json({
-    error: `⚠️ Solo se puede reservar para la fecha ${configuracionReservas.fechaPermitida}.`
-  });
-}
+    configuracionReservas.fechaPermitida &&
+    configuracionReservas.fechaPermitida !== fecha
+  ) {
+    return res.status(403).json({
+      error: `⚠️ Solo se puede reservar para la fecha ${configuracionReservas.fechaPermitida}.`
+    });
+  }
 
- 
   if (!dni || !/^\d{8}$/.test(dni)) return res.status(400).json({ error: "DNI inválido" });
   if (!nombre || !nombre.trim()) return res.status(400).json({ error: "El nombre no puede estar vacío" });
   if (!medicoId) return res.status(400).json({ error: "Debe seleccionar un médico" });
@@ -245,4 +257,5 @@ app.listen(PORT, () => {
   console.log("  PUT    /api/citas/:dni/reprogramar");
   console.log("  PUT    /api/citas/:dni/cancelar");
   console.log("  PUT    /api/admin/configurar-reservas");
+  console.log("  PUT    /api/admin/configurar-fecha");
 });
