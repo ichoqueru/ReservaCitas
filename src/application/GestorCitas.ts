@@ -12,8 +12,9 @@ interface Cita {
   estado: string;
 }
 
-const db = new JsonFileDb<Cita>("./data/citas.json");
-const log = new LogFile("./data/auditoria.log");
+const DATA_PATH = process.env.DATA_PATH || "./data";
+const db = new JsonFileDb<Cita>(`${DATA_PATH}/citas.json`);
+const log = new LogFile(`${DATA_PATH}/auditoria.log`);
 
 export class GestorCitas {
 

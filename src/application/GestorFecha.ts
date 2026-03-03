@@ -1,8 +1,8 @@
 import * as fs from "fs";
 import { JsonFileDb } from "../infrastructure/storage/JsonFileDb";
 
-const db = new JsonFileDb<{ fechaReserva: string }>("./data/fecha.json");
-
+const DATA_PATH = process.env.DATA_PATH || "./data";
+const db = new JsonFileDb<{ fechaReserva: string }>(`${DATA_PATH}/fecha.json`);
 export class GestorFecha {
 
   static async guardarConfiguracion(fechaReserva: string): Promise<void> {

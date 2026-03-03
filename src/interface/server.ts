@@ -12,7 +12,8 @@ import { EstadoCita } from "../domain/EstadoCita";
 import { Notificacion } from "../application/Notificacion";
 import { JsonFileDb } from "../infrastructure/storage/JsonFileDb";
 
-const dbConfig = new JsonFileDb<{ habilitado: boolean, diaPermitido: number | null }>("./data/config.json");
+const DATA_PATH = process.env.DATA_PATH || "./data";
+const dbConfig = new JsonFileDb<{ habilitado: boolean, diaPermitido: number | null }>(`${DATA_PATH}/config.json`)
 const app = express();
 const PORT = process.env.PORT || 3000;
 
