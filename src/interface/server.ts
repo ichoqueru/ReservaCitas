@@ -13,7 +13,7 @@ import { Turno } from "../domain/Turno";
 import { Notificacion } from "../application/Notificacion";
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = Number(process.env.PORT) || 8080;
 
 app.use(cors());
 app.use(express.json());
