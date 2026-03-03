@@ -131,6 +131,11 @@ app.put("/api/admin/configurar-fecha", async (req, res) => {
   res.json({ mensaje: "Fecha configurada correctamente", fecha });
 });
 
+app.put("/api/admin/reiniciar-citas", async (req, res) => {
+  await GestorCitas.reiniciar();
+  res.json({ mensaje: "Citas reiniciadas correctamente" });
+});
+
 app.get("/api/configuracion", (req, res) => {
   console.log(configuracionReservas)
   res.json(configuracionReservas);

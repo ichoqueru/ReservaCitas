@@ -65,6 +65,16 @@ rl.question("Seleccione opción: ", (opcion) => {
       }
 
       if (opcion === "1") {
+        // ✅ Reiniciar citas en Railway
+        try {
+          await fetch("https://reservacitas-production.up.railway.app/api/admin/reiniciar-citas", {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" }
+          });
+          console.log(" Citas reiniciadas en Railway");
+        } catch {
+          console.log(" ⚠️ No se pudo reiniciar las citas en el servidor.");
+        }
         await GestorCitas.reiniciar();
       }
 
@@ -74,6 +84,16 @@ rl.question("Seleccione opción: ", (opcion) => {
   } else if (opcion === "3") {
     rl.question("¿Está seguro que desea reiniciar todas las citas? (si/no): ", async (respuesta) => {
       if (respuesta.trim().toLowerCase() === "si") {
+        // ✅ Reiniciar citas en Railway
+        try {
+          await fetch("https://reservacitas-production.up.railway.app/api/admin/reiniciar-citas", {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" }
+          });
+          console.log(" Citas reiniciadas en Railway");
+        } catch {
+          console.log(" ⚠️ No se pudo reiniciar las citas en el servidor.");
+        }
         await GestorCitas.reiniciar();
       } else {
         console.log("\n Operación cancelada.");
