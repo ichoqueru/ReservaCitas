@@ -22,6 +22,14 @@ app.use(express.static(path.join(process.cwd(), "public")));
 // CONFIGURACIÓN DEL SISTEMA
 // ══════════════════════════════════════════════════════════════════════════════
 async function cargarConfiguracionInicial() {
+  try {
+    const { JsonFileDb } = await import("../infrastructure/storage/JsonFileDb");
+    const dbConfig = new JsonFileDb<any>("./data/config.json");
+    const datos = await dbConfig.leerTodo();
+    if (datos.length > 0) {
+      return { habilitado: datos[0].habilitado, diaPermitido: datos[0].diaPermitido as number | null };
+    }
+  } catch {}
   const dias = await GestorFecha.obtenerDiasDisponibles();
   if (dias.length === 0) return { habilitado: false, diaPermitido: null as number | null };
   const primerDia = new Date(dias[0] + "T12:00:00").getDay();
@@ -79,10 +87,16 @@ app.get("/api/fechas", async (req, res) => {
 // ══════════════════════════════════════════════════════════════════════════════
 // RUTA ADMIN - CONFIGURAR RESERVAS
 // ══════════════════════════════════════════════════════════════════════════════
-app.put("/api/admin/configurar-reservas", (req, res) => {
+app.put("/api/admin/configurar-reservas", async (req, res) => {
   const { habilitado, dia } = req.body;
   configuracionReservas.habilitado = habilitado;
   configuracionReservas.diaPermitido = dia;
+
+  // Guardar en archivo para persistir
+  const { JsonFileDb } = await import("../infrastructure/storage/JsonFileDb");
+  const dbConfig = new JsonFileDb<any>("./data/config.json");
+  await dbConfig.guardarTodo([{ habilitado, diaPermitido: dia }]);
+
   res.json({ mensaje: "Configuración actualizada correctamente", configuracionReservas });
 });
 
