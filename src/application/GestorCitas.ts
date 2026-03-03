@@ -121,6 +121,36 @@ export class GestorCitas {
     return false;
   }
 
+  static cancelarCita(dni: string): boolean {
+  this.inicializar();
+  const archivos = fs.readdirSync(CARPETA);
+
+  for (const archivo of archivos) {
+    const ruta = path.join(CARPETA, archivo);
+    const lineas = fs.readFileSync(ruta, "utf-8")
+      .split("\n")
+      .filter(l => l.trim() !== "");
+
+    const index = lineas.findIndex(l => l.includes(`DNI: ${dni}`));
+
+    if (index !== -1) {
+      const lineaAnterior = lineas[index]!;
+
+      if (lineaAnterior.includes("Estado: CANCELADA")) {
+        return false;
+      }
+      // Cambiar estado a CANCELADA
+      lineas[index] = lineaAnterior.replace(/Estado: \S+/, "Estado: CANCELADA");
+
+      fs.writeFileSync(ruta, lineas.join("\n") + "\n", "utf-8");
+
+      return true;
+    }
+  }
+
+  return false;
+}
+
   static tieneCitaDuplicada(dni: string, nombreDoctor: string, fecha: string): boolean {
   this.inicializar();
   const archivos = fs.readdirSync(CARPETA);

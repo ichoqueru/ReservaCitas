@@ -1,6 +1,6 @@
 import * as readline from "readline";
-import { GestorFecha } from "../application/GestorFecha";
-import { GestorCitas } from "../application/GestorCitas";
+import { GestorFecha } from "../../application/GestorFecha";
+import { GestorCitas } from "../../application/GestorCitas";
 
 const rl = readline.createInterface({
   input: process.stdin,
@@ -17,7 +17,7 @@ console.log("4. Ver citas del día\n");
 rl.question("Seleccione opción: ", (opcion) => {
 
   if (opcion === "1" || opcion === "2") {
-    rl.question("Ingrese fecha del dia de reserva (YYYY-MM-DD): ", (fecha) => {
+    rl.question("Ingrese fecha del dia de reserva (YYYY-MM-DD): ", async (fecha) => {
 
       const hoy = new Date();
       const año = hoy.getFullYear();
@@ -37,9 +37,21 @@ rl.question("Seleccione opción: ", (opcion) => {
         return;
       }
 
-
       GestorFecha.guardarConfiguracion(fecha);
       console.log(`\n Fecha de reserva configurado: ${GestorFecha.nombreDia(fecha)} ${fecha}`);
+
+      // Sincronizar día permitido con el servidor
+      const diaSemana = new Date(fecha + "T12:00:00").getDay();
+      try {
+        await fetch("http://localhost:3000/api/admin/configurar-reservas", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ habilitado: true, dia: diaSemana })
+        });
+        console.log(` Reservas habilitadas para: ${GestorFecha.nombreDia(fecha)}`);
+      } catch {
+        console.log(" ⚠️ No se pudo sincronizar con el servidor.");
+      }
 
       if (opcion === "1") {
         GestorCitas.reiniciar();
@@ -58,21 +70,20 @@ rl.question("Seleccione opción: ", (opcion) => {
       rl.close();
     });
 
-    } else if (opcion === "4") {
-      rl.question("Ingrese fecha a consultar (YYYY-MM-DD): ", (fecha) => {
-        if (!/^\d{4}-\d{2}-\d{2}$/.test(fecha)) {
+  } else if (opcion === "4") {
+    rl.question("Ingrese fecha a consultar (YYYY-MM-DD): ", (fecha) => {
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(fecha)) {
         console.log("\n Fecha inválida, use el formato YYYY-MM-DD");
         rl.close();
         return;
-        }
+      }
 
-        const { GestorFecha } = require("../application/GestorFecha");
-        console.log(`\n=== CITAS DEL DÍA: ${GestorFecha.nombreDia(fecha)} ${fecha} ===`);
-        GestorCitas.verCitasDelDia(fecha);
-        rl.close();
-      });
-    }
-    else {
+      console.log(`\n=== CITAS DEL DÍA: ${GestorFecha.nombreDia(fecha)} ${fecha} ===`);
+      GestorCitas.verCitasDelDia(fecha);
+      rl.close();
+    });
+
+  } else {
     console.log("\n Opción inválida");
     rl.close();
   }

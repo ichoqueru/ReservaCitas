@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MediCitas — Sistema de Citas Médicas</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+<header>
+  <div class="logo">🏥 Medi<span>Citas</span></div>
+  <nav>
+    <button class="active" onclick="showPage('home', this)">Inicio</button>
+    <button onclick="showPage('reservar', this)">Reservar Cita</button>
+    <button onclick="showPage('buscar', this)">Mi Cita</button>
+  </nav>
+</header>
+
+<div class="hero" id="hero-section">
+  <h1>Tu salud,<br><em>bien organizada</em></h1>
+  <p>Reserva tu cita médica de forma rápida y sencilla.</p>
+  <div class="hero-actions">
+    <button class="btn-hero primary" onclick="showPage('reservar', document.querySelector('nav button:nth-child(2)'))">📅 Reservar mi cita</button>
+    <button class="btn-hero secondary" onclick="showPage('buscar', document.querySelector('nav button:nth-child(3)'))">🔍 Consultar mi cita</button>
+  </div>
+</div>
+
+<main>
+
+  <!-- HOME -->
+  <div class="page active" id="page-home">
+    <div class="section-header" style="margin-top:.5rem">
+      <div>
+        <div class="section-title">Bienvenido</div>
+        <div class="section-sub">Estado del sistema en tiempo real</div>
+      </div>
+      <div class="status-dot">
+        <span class="dot" id="status-dot"></span>
+        <span id="status-text">Verificando...</span>
+      </div>
+    </div>
+    <div class="stats-grid">
+      <div class="stat-card"><div class="stat-num" id="stat-esp">—</div><div class="stat-label">Especialidades</div></div>
+      <div class="stat-card"><div class="stat-num" id="stat-med">—</div><div class="stat-label">Médicos Disponibles</div></div>
+      <div class="stat-card"><div class="stat-num" id="stat-dias">—</div><div class="stat-label">Días para Reservar</div></div>
+    </div>
+    <div class="card">
+      <div class="card-title">¿Cómo funciona?</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1rem">
+        <div style="padding:.75rem 1rem;background:var(--surface2);border-radius:10px;border:1px solid var(--border)">
+          <div style="font-size:1.5rem;margin-bottom:.5rem">1️⃣</div>
+          <div style="font-weight:600;margin-bottom:.3rem;font-size:.9rem">Ingresa tus datos</div>
+          <div style="font-size:.82rem;color:var(--text-soft)">DNI y nombre del paciente.</div>
+        </div>
+        <div style="padding:.75rem 1rem;background:var(--surface2);border-radius:10px;border:1px solid var(--border)">
+          <div style="font-size:1.5rem;margin-bottom:.5rem">2️⃣</div>
+          <div style="font-weight:600;margin-bottom:.3rem;font-size:.9rem">Elige especialidad y médico</div>
+          <div style="font-size:.82rem;color:var(--text-soft)">Selecciona el tipo de consulta y turno.</div>
+        </div>
+        <div style="padding:.75rem 1rem;background:var(--surface2);border-radius:10px;border:1px solid var(--border)">
+          <div style="font-size:1.5rem;margin-bottom:.5rem">3️⃣</div>
+          <div style="font-weight:600;margin-bottom:.3rem;font-size:.9rem">Selecciona fecha</div>
+          <div style="font-size:.82rem;color:var(--text-soft)">Escoge uno de los días disponibles.</div>
+        </div>
+        <div style="padding:.75rem 1rem;background:var(--surface2);border-radius:10px;border:1px solid var(--border)">
+          <div style="font-size:1.5rem;margin-bottom:.5rem">✅</div>
+          <div style="font-weight:600;margin-bottom:.3rem;font-size:.9rem">¡Listo!</div>
+          <div style="font-size:.82rem;color:var(--text-soft)">Horario asignado automáticamente.</div>
+        </div>
+      </div>
+    </div>
+    <div id="alert-home" class="alert"></div>
+  </div>
+
+  <!-- RESERVAR -->
+  <div class="page" id="page-reservar">
+    <div class="section-header">
+      <div>
+        <div class="section-title">Reservar Cita</div>
+        <div class="section-sub">Completa el formulario paso a paso</div>
+      </div>
+    </div>
+    <div class="steps">
+      <div class="step active" id="step1"><span class="step-num">1</span>Paciente</div>
+      <div class="step"        id="step2"><span class="step-num">2</span>Médico</div>
+      <div class="step"        id="step3"><span class="step-num">3</span>Fecha</div>
+      <div class="step"        id="step4"><span class="step-num">4</span>Confirmar</div>
+    </div>
+    <div class="progress-bar"><div class="progress-fill" id="progress-fill" style="width:25%"></div></div>
+    <div class="card">
+      <!-- PASO 1 -->
+      <div id="form-step1">
+        <div class="card-title">Datos del Paciente</div>
+        <div class="form-grid">
+          <div class="form-group">
+            <label>DNI *</label>
+            <input type="text" id="dni" placeholder="12345678" maxlength="8" inputmode="numeric" />
+          </div>
+          <div class="form-group">
+            <label>Nombre completo *</label>
+            <input type="text" id="nombre" placeholder="Juan Pérez García" />
+          </div>
+        </div>
+        <div id="alert-step1" class="alert"></div>
+        <div class="form-actions">
+          <button class="btn btn-primary" onclick="irPaso2()">Continuar →</button>
+        </div>
+      </div>
+      <!-- PASO 2 -->
+      <div id="form-step2" style="display:none">
+        <div class="card-title">Elige tu Médico</div>
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Especialidad *</label>
+            <select id="select-esp" onchange="cargarMedicos()">
+              <option value="">— Selecciona —</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Turno *</label>
+            <select id="select-turno" onchange="cargarMedicos()">
+              <option value="">— Selecciona —</option>
+              <option value="Mañana">Mañana (07:00 – 12:00)</option>
+              <option value="Tarde">Tarde (12:00 – 19:00)</option>
+            </select>
+          </div>
+          <div class="form-group full">
+            <label>Médico *</label>
+            <select id="select-medico">
+              <option value="">— Primero elige especialidad y turno —</option>
+            </select>
+          </div>
+        </div>
+        <div id="alert-step2" class="alert"></div>
+        <div class="form-actions">
+          <button class="btn btn-ghost" onclick="irPaso(1)">← Atrás</button>
+          <button class="btn btn-primary" onclick="irPaso3()">Continuar →</button>
+        </div>
+      </div>
+      <!-- PASO 3 -->
+      <div id="form-step3" style="display:none">
+        <div class="card-title">Selecciona la Fecha</div>
+        <div class="form-group">
+          <label>Día disponible *</label>
+          <select id="select-fecha">
+            <option value="">— Cargando fechas... —</option>
+          </select>
+        </div>
+        <div id="alert-step3" class="alert"></div>
+        <div class="form-actions">
+          <button class="btn btn-ghost" onclick="irPaso(2)">← Atrás</button>
+          <button class="btn btn-primary" onclick="irPaso4()">Ver Resumen →</button>
+        </div>
+      </div>
+      <!-- PASO 4 -->
+      <div id="form-step4" style="display:none">
+        <div class="card-title">Confirma tu Cita</div>
+        <div class="resumen show" id="resumen-cita">
+          <h3>📋 Resumen de la Cita</h3>
+          <div class="resumen-grid" id="resumen-grid"></div>
+          <div id="alert-step4" class="alert"></div>
+          <div class="resumen-actions">
+            <button class="btn btn-ghost" onclick="irPaso(3)">← Modificar</button>
+            <button class="btn btn-primary" id="btn-confirmar" onclick="confirmarCita()">✅ Confirmar Reserva</button>
+          </div>
+        </div>
+        <div class="resumen" id="resumen-exito" style="background:var(--surface);border-color:var(--border)">
+          <h3 style="color:var(--accent)">🎉 ¡Cita Reservada!</h3>
+          <div class="resumen-grid" id="resumen-exito-grid"></div>
+          <div class="resumen-actions">
+            <button class="btn btn-primary" onclick="nuevaReserva()">+ Nueva Reserva</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- BUSCAR -->
+<div class="page" id="page-buscar">
+  <div class="section-header">
+    <div>
+      <div class="section-title">Mi Cita</div>
+      <div class="section-sub">Consulta o reprograma tu cita por DNI</div>
+    </div>
+  </div>
+  <div id="banner-bloqueo" style="display:none; background:#fff3cd; border:1px solid #ffc107; 
+     color:#856404; padding:1rem 1.25rem; border-radius:10px; margin-bottom:1rem; font-size:.9rem">
+  ⚠️ <strong id="banner-bloqueo-texto"></strong>
+</div>
+
+  <div class="card">
+    <div class="card-title">Buscar por DNI</div>
+    <div class="form-grid">
+      <div class="form-group">
+        <label>DNI del paciente</label>
+        <input 
+          type="text" 
+          id="buscar-dni" 
+          placeholder="12345678" 
+          maxlength="8" 
+          inputmode="numeric" 
+          onkeydown="if(event.key==='Enter') buscarCita()" />
+      </div>
+
+      <div class="form-group" style="justify-content:flex-end">
+        <label>&nbsp;</label>
+        <button 
+          class="btn btn-primary" 
+          onclick="buscarCita()" 
+          id="btn-buscar">
+          🔍 Buscar
+        </button>
+      </div>
+    </div>
+
+    <div id="alert-buscar" class="alert"></div>
+  </div>
+
+  <!-- CITA ENCONTRADA -->
+  <div class="cita-card" id="cita-encontrada">
+    <div class="cita-card-header">
+      <h4>📄 Cita Encontrada</h4>
+      <span class="badge badge-green" id="badge-estado">
+        PROGRAMADA
+      </span>
+    </div>
+
+    <div class="cita-detail-grid" id="cita-detail-grid"></div>
+
+    <!-- REPROGRAMACIÓN -->
+    <div class="reprogram-form" id="reprogram-form">
+      <div style="margin-bottom:1rem;font-weight:600;font-size:.9rem;color:var(--text-soft)">
+        📅 Seleccionar nueva fecha
+      </div>
+
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Nueva Fecha *</label>
+          <select id="reprogram-fecha">
+            <option value="">— Selecciona —</option>
+          </select>
+        </div>
+      </div>
+
+      <div id="alert-reprogram" class="alert"></div>
+
+      <div class="form-actions" style="margin-top:1rem">
+        <button 
+          class="btn btn-ghost btn-sm" 
+          onclick="cancelarReprogram()">
+          Cancelar
+        </button>
+
+        <button 
+          class="btn btn-warn btn-sm" 
+          onclick="confirmarReprogram()">
+          📅 Confirmar Reprogramación
+        </button>
+      </div>
+    </div>
+
+    <!-- ACCIONES -->
+    <div 
+      class="form-actions" 
+      style="margin-top:1.25rem" 
+      id="cita-acciones">
+
+      <button 
+        id="btn-reprogramar"
+        class="btn btn-ghost btn-sm" 
+        onclick="mostrarReprogram()">
+        📅 Reprogramar
+      </button>
+
+      <button 
+        id="btn-cancelar"
+        class="btn btn-warn btn-sm" 
+        onclick="cancelarCita()">
+        ❌ Cancelar Cita
+      </button>
+
+    </div>
+  </div>
+</div>
+
+  <!-- LISTADO -->
+  <div class="page" id="page-listado">
+    <div class="section-header">
+      <div>
+        <div class="section-title">Listado de Citas</div>
+        <div class="section-sub">Citas registradas por fecha</div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Buscar por fecha</label>
+          <input type="date" id="listado-fecha" />
+        </div>
+        <div class="form-group" style="justify-content:flex-end">
+          <label>&nbsp;</label>
+          <button class="btn btn-primary" onclick="cargarListado()">📋 Ver Citas</button>
+        </div>
+      </div>
+    </div>
+    <div id="alert-listado" class="alert"></div>
+    <div id="tabla-citas-wrap" style="display:none">
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Hora</th><th>Paciente</th><th>DNI</th>
+              <th>Doctor</th><th>Especialidad</th><th>Turno</th><th>Estado</th>
+            </tr>
+          </thead>
+          <tbody id="tabla-citas-body"></tbody>
+        </table>
+      </div>
+    </div>
+    <div id="listado-empty" class="empty" style="display:none">
+      <div class="empty-icon">📭</div>
+      <p>No hay citas registradas para esa fecha.</p>
+    </div>
+  </div>
+
+</main>
+
+<script src="script.js"></script>
+</body>
+</html>

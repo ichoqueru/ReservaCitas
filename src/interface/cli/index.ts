@@ -1,15 +1,15 @@
 import * as readline from "readline";
-import { Paciente } from "../domain/Paciente";
-import { Especialidad } from "../domain/Especialidad";
-import { CitaMedica } from "../domain/CitaMedica";
-import { EstadoCita } from "../domain/EstadoCita";
-import { Notificacion } from "../application/Notificacion";
-import { Turno } from "../domain/Turno";
-import { GestorFecha } from "../application/GestorFecha";
-import { ListaMedicos } from "../data/ListaMedicos";
-import { GestorCancelacion } from "../application/GestorCancelacion";
-import { GestorReprogramacion } from "../application/GestorReprogramacion";
-import { GestorCitas } from "../application/GestorCitas";
+import { Paciente } from "../../domain/Paciente";
+import { Especialidad } from "../../domain/Especialidad";
+import { CitaMedica } from "../../domain/CitaMedica";
+import { EstadoCita } from "../../domain/EstadoCita";
+import { Notificacion } from "../../application/Notificacion";
+import { Turno } from "../../domain/Turno";
+import { GestorFecha } from "../../application/GestorFecha";
+import { ListaMedicos } from "../../data/ListaMedicos";
+import { GestorCancelacion } from "../../application/GestorCancelacion";
+import { GestorReprogramacion } from "../../application/GestorReprogramacion";
+import { GestorCitas } from "../../application/GestorCitas";
 
 const rl = readline.createInterface({
   input: process.stdin,
