@@ -14,7 +14,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "build": "tsc",
+    "build": "tsc && cp -r data dist/data",
   "start": "node dist/interface/server.js",
   "dev": "ts-node src/interface/server.ts"
   },
