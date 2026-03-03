@@ -119,6 +119,7 @@ app.put("/api/admin/configurar-reservas", async (req, res) => {
   });
 });
 app.get("/api/configuracion", (req, res) => {
+  console.log(configuracionReservas)
   res.json(configuracionReservas);
 });
 // ══════════════════════════════════════════════════════════════════════════════

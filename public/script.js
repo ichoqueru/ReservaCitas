@@ -1,5 +1,6 @@
 const API = "https://reservacitas-production.up.railway.app";
-let configuracionReservas = { habilitado: true, diaPermitido: null };
+//const API = "http://localhost:3000";
+let configuracionReservas = { habilitado: true, fechaPermitida: null };
 
 async function obtenerConfiguracion() {
   try {
@@ -9,7 +10,7 @@ async function obtenerConfiguracion() {
   } catch {
     console.warn("⚠️ No se pudo obtener la configuración del sistema.");
   }
-}
+} 
 
 let reserva = { dni:"", nombre:"", medicoId:null, medicoNombre:"", especialidad:"", turno:"", fecha:"", fechaDia:"" };
 let citaBuscada = null;
@@ -52,7 +53,7 @@ async function cargarHome() {
   } catch {
     dot.className = 'dot offline';
     txt.textContent = 'Servidor desconectado';
-    showAlert('alert-home', 'error', '⚠️ No se pudo conectar con el servidor. Asegúrate de que esté corriendo en <strong>localhost:3000</strong>.');
+    showAlert('alert-home', 'error', '⚠️ No se pudo conectar con el servidor.');
   }
 }
 
@@ -63,18 +64,24 @@ async function iniciarReserva() {
   reserva = { dni:"", nombre:"", medicoId:null, medicoNombre:"", especialidad:"", turno:"", fecha:"", fechaDia:"" };
   irPaso(1);
   await obtenerConfiguracion();
-  const hoy = new Date().getDay();
-  const bloqueado = !configuracionReservas.habilitado ||
-    (configuracionReservas.diaPermitido !== null && configuracionReservas.diaPermitido !== hoy);
 
-  const diasNombre = { 0:"Domingo", 1:"Lunes", 2:"Martes", 3:"Miércoles", 4:"Jueves", 5:"Viernes", 6:"Sábado" };
+  // ✅ Comparar por fecha exacta (YYYY-MM-DD)
+  const hoy = new Date().toISOString().split('T')[0];
+  const bloqueado = !configuracionReservas.habilitado ||
+    (configuracionReservas.fechaPermitida !== null && configuracionReservas.fechaPermitida !== hoy);
+
+  console.log("Hoy:", hoy);
+  console.log("Fecha permitida:", configuracionReservas.fechaPermitida);
+  console.log("Bloqueado:", bloqueado);
 
   if (bloqueado) {
-const msg = !configuracionReservas.habilitado
-  ? `⚠️ Hoy no se puede reservar citas. ${configuracionReservas.diaPermitido !== null ? `El día habilitado es: <strong>${diasNombre[configuracionReservas.diaPermitido]}</strong>.` : 'Consulta con el administrador.'}`
-  : `⚠️ Hoy no se puede reservar. El día habilitado es: <strong>${diasNombre[configuracionReservas.diaPermitido]}</strong>.`;
+    const msg = !configuracionReservas.habilitado
+      ? `⚠️ Hoy no se puede reservar citas. ${configuracionReservas.fechaPermitida !== null
+          ? `El día habilitado es: <strong>${configuracionReservas.fechaPermitida}</strong>.`
+          : 'Consulta con el administrador.'}`
+      : `⚠️ Hoy no se puede reservar. El día habilitado es: <strong>${configuracionReservas.fechaPermitida}</strong>.`;
+
     showAlert('alert-step1', 'error', msg);
-    // Deshabilitar el botón de continuar
     document.querySelector('#form-step1 .btn-primary').disabled = true;
   } else {
     hideAlert('alert-step1');
@@ -190,36 +197,21 @@ async function confirmarCita() {
   hideAlert('alert-step4');
 
   try {
-    
-    await obtenerConfiguracion();    
-    const hoy = new Date().getDay();
+    await obtenerConfiguracion();
 
-    if (!configuracionReservas.habilitado || 
-        (configuracionReservas.diaPermitido !== null && configuracionReservas.diaPermitido !== hoy)) {
+    // ✅ Comparar por fecha exacta (YYYY-MM-DD)
+    const hoy = new Date().toISOString().split('T')[0];
+    if (!configuracionReservas.habilitado ||
+        (configuracionReservas.fechaPermitida !== null && configuracionReservas.fechaPermitida !== hoy)) {
 
-      // Mapear días a nombres correctos
-      const diasPlural = {
-        0: "domingos",
-        1: "lunes",
-        2: "martes",
-        3: "miércoles",
-        4: "jueves",
-        5: "viernes",
-        6: "sábados"
-      };
-
-      const diaConfigurado = configuracionReservas.diaPermitido !== null 
-                            ? diasPlural[configuracionReservas.diaPermitido] 
-                            : "el día configurado";
-
-      showAlert('alert-step4', 'error', `⚠️ Hoy no se puede reservar citas. Solo se puede reservar los ${diaConfigurado} según la configuración del administrador.`);
+      const fechaConfigurada = configuracionReservas.fechaPermitida ?? "la fecha configurada";
+      showAlert('alert-step4', 'error', `⚠️ Hoy no se puede reservar citas. Solo se puede reservar para el <strong>${fechaConfigurada}</strong> según la configuración del administrador.`);
 
       btn.disabled = false;
       btn.innerHTML = '✅ Confirmar Reserva';
       return;
     }
 
-    // Lógica normal de reservar
     const res = await fetch(API + '/api/citas', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -357,7 +349,6 @@ async function confirmarReprogram() {
 async function cancelarCita() {
   if (!citaBuscada) return;
 
-  // 🔒 Evitar cancelar si ya está cancelada
   if (citaBuscada.estado === "CANCELADA") {
     showAlert('alert-buscar','error','⚠️ Esta cita ya está cancelada.');
     return;
@@ -367,10 +358,7 @@ async function cancelarCita() {
   if (!confirmar) return;
 
   try {
-    const res = await fetch(`${API}/api/citas/${citaBuscada.dni}/cancelar`, {
-      method: 'PUT'
-    });
-
+    const res = await fetch(`${API}/api/citas/${citaBuscada.dni}/cancelar`, { method: 'PUT' });
     const data = await res.json();
 
     if (!res.ok) {
@@ -379,38 +367,24 @@ async function cancelarCita() {
     }
 
     showAlert('alert-buscar','success','✅ Cita cancelada correctamente.');
-
-    // 🧠 Actualizar estado en memoria
     citaBuscada.estado = "CANCELADA";
 
-    // 🎨 Obtener elementos
-    const badge = document.getElementById('badge-estado');
-    const btnCancelar = document.getElementById('btn-cancelar');
+    const badge          = document.getElementById('badge-estado');
+    const btnCancelar    = document.getElementById('btn-cancelar');
     const btnReprogramar = document.getElementById('btn-reprogramar');
-    const reprogramForm = document.getElementById('reprogram-form');
-    const acciones = document.getElementById('cita-acciones');
+    const reprogramForm  = document.getElementById('reprogram-form');
+    const acciones       = document.getElementById('cita-acciones');
 
-    // 🎨 Actualizar visualmente
-    if (badge) {
-      badge.textContent = 'CANCELADA';
-      badge.className = 'badge badge-red';
-    }
-
-    // 🚫 Deshabilitar botones
-    if (btnCancelar) btnCancelar.disabled = true;
+    if (badge)          { badge.textContent = 'CANCELADA'; badge.className = 'badge badge-red'; }
+    if (btnCancelar)    btnCancelar.disabled = true;
     if (btnReprogramar) btnReprogramar.disabled = true;
-
-    // 🧾 Ocultar formulario de reprogramación
-    if (reprogramForm) reprogramForm.classList.remove('show');
-
-    // 🚫 Ocultar bloque de acciones completo (opcional)
-    if (acciones) acciones.style.display = 'none';
+    if (reprogramForm)  reprogramForm.classList.remove('show');
+    if (acciones)       acciones.style.display = 'none';
 
   } catch {
     showAlert('alert-buscar','error','⚠️ No se pudo conectar con el servidor.');
   }
 }
-
 
 // ════════════════════════════════
 //  LISTADO

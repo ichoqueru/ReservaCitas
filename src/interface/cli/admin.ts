@@ -43,10 +43,10 @@ rl.question("Seleccione opción: ", (opcion) => {
       // Sincronizar con el servidor
       const diaSemana = new Date(fecha + "T12:00:00").getDay();
       try {
-        await fetch("https://reservacitas-production-03b4.up.railway.app/api/admin/configurar-reservas", {
+        await fetch("https://reservacitas-production.up.railway.app/api/admin/configurar-reservas", {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ habilitado: true, fecha })
+          body: JSON.stringify({ habilitado: true, fechaPermitida: fecha })
         });
         console.log(` Reservas habilitadas para: ${GestorFecha.nombreDia(fecha)}`);
       } catch {
