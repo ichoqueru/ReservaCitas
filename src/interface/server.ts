@@ -13,7 +13,7 @@ import { Turno } from "../domain/Turno";
 import { Notificacion } from "../application/Notificacion";
 
 const app = express();
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 
 app.use(cors());
 app.use(express.json());
@@ -224,7 +224,7 @@ app.get("/api/citas/:dni", (req, res) => {
 // POST /api/citas → reservar una nueva cita
 app.post("/api/citas", (req, res) => {
 
-  // 🔴 VALIDACIÓN GLOBAL DEL SISTEMA
+  //  VALIDACIÓN GLOBAL DEL SISTEMA
   const hoy = new Date().getDay();
 
   if (!configuracionReservas.habilitado) {
@@ -338,7 +338,7 @@ app.put("/api/citas/:dni/cancelar", (req, res) => {
 // INICIAR SERVIDOR
 // ══════════════════════════════════════════════════════════════════════════════
 app.listen(PORT, () => {
-  console.log(`\n Servidor corriendo en http://localhost:${PORT}`);
+  console.log(`\n Servidor corriendo en puerto ${PORT}`);
   console.log("\n Rutas disponibles:");
   console.log("  GET    /api/especialidades");
   console.log("  GET    /api/medicos?especialidad=X&turno=Y");
