@@ -24,9 +24,6 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(process.cwd(), "public")));
 
-// ══════════════════════════════════════════════════════════════════════════════
-// CONFIGURACIÓN DEL SISTEMA
-// ══════════════════════════════════════════════════════════════════════════════
 async function cargarConfiguracionInicial(): Promise<{
   habilitado: boolean;
   fechaPermitida: string | null;
@@ -40,12 +37,9 @@ async function cargarConfiguracionInicial(): Promise<{
       };
     }
   } catch {}
-
-  return {
-    habilitado: false,
-    fechaPermitida: null
-  };
+  return { habilitado: false, fechaPermitida: null };
 }
+
 let configuracionReservas = {
   habilitado: false,
   fechaPermitida: null as string | null
@@ -55,7 +49,6 @@ cargarConfiguracionInicial().then(config => {
   configuracionReservas = config;
 });
 
-// ─── DATOS BASE ────────────────────────────────────────────────────────────────
 const especialidades = [
   new Especialidad("Cardiología"),
   new Especialidad("Dermatología"),
@@ -66,17 +59,11 @@ const especialidades = [
 const medicinaGeneral = new Especialidad("Medicina General");
 const medicos = ListaMedicos.obtener(especialidades, medicinaGeneral);
 
-// ══════════════════════════════════════════════════════════════════════════════
-// RUTAS DE ESPECIALIDADES
-// ══════════════════════════════════════════════════════════════════════════════
 app.get("/api/especialidades", (req, res) => {
   const lista = [...especialidades.map((e) => e.nombre), medicinaGeneral.nombre];
   res.json(lista);
 });
 
-// ══════════════════════════════════════════════════════════════════════════════
-// RUTAS DE MÉDICOS
-// ══════════════════════════════════════════════════════════════════════════════
 app.get("/api/medicos", (req, res) => {
   const { especialidad, turno } = req.query as { especialidad?: string; turno?: string };
   const normalizar = (texto: string) =>
@@ -87,9 +74,6 @@ app.get("/api/medicos", (req, res) => {
   res.json(resultado.map(m => ({ id: m.id, nombre: m.nombre, especialidad: m.especialidad.nombre, turno: m.turno.nombre })));
 });
 
-// ══════════════════════════════════════════════════════════════════════════════
-// RUTAS DE FECHAS
-// ══════════════════════════════════════════════════════════════════════════════
 app.get("/api/fechas", async (req, res) => {
   const dias = await GestorFecha.obtenerDiasDisponibles();
   if (dias.length === 0) return res.status(404).json({ error: "No hay fechas configuradas aún" });
@@ -97,31 +81,14 @@ app.get("/api/fechas", async (req, res) => {
   res.json(diasConNombre);
 });
 
-// ══════════════════════════════════════════════════════════════════════════════
-// RUTA ADMIN - CONFIGURAR RESERVAS
-// ══════════════════════════════════════════════════════════════════════════════
 app.put("/api/admin/configurar-reservas", async (req, res) => {
   const { habilitado, fechaPermitida } = req.body;
-
   configuracionReservas.habilitado = habilitado;
   configuracionReservas.fechaPermitida = fechaPermitida ?? null;
-
-  await dbConfig.guardarTodo([
-    {
-      habilitado,
-      fechaPermitida: fechaPermitida ?? null
-    }
-  ]);
-
-  res.json({
-    mensaje: "Configuración actualizada correctamente",
-    configuracionReservas
-  });
+  await dbConfig.guardarTodo([{ habilitado, fechaPermitida: fechaPermitida ?? null }]);
+  res.json({ mensaje: "Configuración actualizada correctamente", configuracionReservas });
 });
 
-// ══════════════════════════════════════════════════════════════════════════════
-// RUTA ADMIN - CONFIGURAR FECHA ✅ NUEVA RUTA
-// ══════════════════════════════════════════════════════════════════════════════
 app.put("/api/admin/configurar-fecha", async (req, res) => {
   const { fecha } = req.body;
   if (!fecha || !/^\d{4}-\d{2}-\d{2}$/.test(fecha)) {
@@ -137,13 +104,10 @@ app.put("/api/admin/reiniciar-citas", async (req, res) => {
 });
 
 app.get("/api/configuracion", (req, res) => {
-  console.log(configuracionReservas)
+  console.log(configuracionReservas);
   res.json(configuracionReservas);
 });
 
-// ══════════════════════════════════════════════════════════════════════════════
-// RUTAS DE CITAS
-// ══════════════════════════════════════════════════════════════════════════════
 app.get("/api/citas", async (req, res) => {
   const { fecha } = req.query as { fecha?: string };
   if (!fecha || !/^\d{4}-\d{2}-\d{2}$/.test(fecha)) {
@@ -165,14 +129,18 @@ app.get("/api/citas/:dni", async (req, res) => {
 
 app.post("/api/citas", async (req, res) => {
   const { dni, nombre, medicoId, fecha } = req.body;
-  const hoy = new Date().toISOString().split('T')[0]; // ✅ fecha de hoy
+
+  // ✅ Corregido - usa hora local en vez de UTC
+  const ahora = new Date();
+  const año = ahora.getFullYear();
+  const mes = String(ahora.getMonth() + 1).padStart(2, "0");
+  const dia = String(ahora.getDate()).padStart(2, "0");
+  const hoy = `${año}-${mes}-${dia}`;
+
   if (!configuracionReservas.habilitado) {
     return res.status(403).json({ error: "⚠️ Las reservas están deshabilitadas por el administrador." });
   }
-  if (
-    configuracionReservas.fechaPermitida &&
-    configuracionReservas.fechaPermitida !== hoy // ✅ compara con hoy, no con la fecha de la cita
-  ) {
+  if (configuracionReservas.fechaPermitida && configuracionReservas.fechaPermitida !== hoy) {
     return res.status(403).json({
       error: `⚠️ Solo se puede reservar el día ${configuracionReservas.fechaPermitida}.`
     });
@@ -248,9 +216,6 @@ app.put("/api/citas/:dni/cancelar", async (req, res) => {
   res.json({ mensaje: "Cita cancelada correctamente" });
 });
 
-// ══════════════════════════════════════════════════════════════════════════════
-// INICIAR SERVIDOR
-// ══════════════════════════════════════════════════════════════════════════════
 app.listen(PORT, () => {
   console.log(`\n Servidor corriendo en puerto ${PORT}`);
   console.log("\n Rutas disponibles:");

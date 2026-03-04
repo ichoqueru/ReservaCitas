@@ -3,6 +3,7 @@ import { JsonFileDb } from "../infrastructure/storage/JsonFileDb";
 
 const DATA_PATH = process.env.DATA_PATH || "./data";
 const db = new JsonFileDb<{ fechaReserva: string }>(`${DATA_PATH}/fecha.json`);
+
 export class GestorFecha {
 
   static async guardarConfiguracion(fechaReserva: string): Promise<void> {
@@ -28,7 +29,7 @@ export class GestorFecha {
     return hoyLocal === fechaReserva;
   }
 
-static async obtenerDiasDisponibles(): Promise<string[]> {
+  static async obtenerDiasDisponibles(): Promise<string[]> {
     const inicio = await this.obtenerFechaReserva();
     if (!inicio) return [];
     const dias: string[] = [];
