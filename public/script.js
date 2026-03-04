@@ -65,8 +65,10 @@ async function iniciarReserva() {
   irPaso(1);
   await obtenerConfiguracion();
 
-  // ✅ Comparar por fecha exacta (YYYY-MM-DD)
-  const hoy = new Date().toISOString().split('T')[0];
+  // ✅ Corregido - usa hora local
+  const ahora = new Date();
+  const hoy = `${ahora.getFullYear()}-${String(ahora.getMonth()+1).padStart(2,'0')}-${String(ahora.getDate()).padStart(2,'0')}`;
+
   const bloqueado = !configuracionReservas.habilitado ||
     (configuracionReservas.fechaPermitida !== null && configuracionReservas.fechaPermitida !== hoy);
 
@@ -199,8 +201,10 @@ async function confirmarCita() {
   try {
     await obtenerConfiguracion();
 
-    // ✅ Comparar por fecha exacta (YYYY-MM-DD)
-    const hoy = new Date().toISOString().split('T')[0];
+    // ✅ Corregido - usa hora local
+    const ahora = new Date();
+    const hoy = `${ahora.getFullYear()}-${String(ahora.getMonth()+1).padStart(2,'0')}-${String(ahora.getDate()).padStart(2,'0')}`;
+
     if (!configuracionReservas.habilitado ||
         (configuracionReservas.fechaPermitida !== null && configuracionReservas.fechaPermitida !== hoy)) {
 
