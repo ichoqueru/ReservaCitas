@@ -28,7 +28,7 @@ export class GestorFecha {
     return hoyLocal === fechaReserva;
   }
 
-  static async obtenerDiasDisponibles(): Promise<string[]> {
+static async obtenerDiasDisponibles(): Promise<string[]> {
     const inicio = await this.obtenerFechaReserva();
     if (!inicio) return [];
     const dias: string[] = [];
@@ -36,8 +36,10 @@ export class GestorFecha {
     for (let i = 0; i < 6; i++) {
       const d = new Date(fecha);
       d.setDate(fecha.getDate() + i);
-      const dia = d.toISOString().split("T")[0]!;
-      dias.push(dia);
+      const año = d.getFullYear();
+      const mes = String(d.getMonth() + 1).padStart(2, "0");
+      const dia = String(d.getDate()).padStart(2, "0");
+      dias.push(`${año}-${mes}-${dia}`);
     }
     return dias;
   }
