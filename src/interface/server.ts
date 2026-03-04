@@ -12,6 +12,8 @@ import { EstadoCita } from "../domain/EstadoCita";
 import { Notificacion } from "../application/Notificacion";
 import { JsonFileDb } from "../infrastructure/storage/JsonFileDb";
 
+process.env.TZ = "America/Lima"; // ✅ Forzar zona horaria de Perú
+
 const DATA_PATH = process.env.DATA_PATH || "./data";
 const dbConfig = new JsonFileDb<{
   habilitado: boolean;
@@ -130,7 +132,6 @@ app.get("/api/citas/:dni", async (req, res) => {
 app.post("/api/citas", async (req, res) => {
   const { dni, nombre, medicoId, fecha } = req.body;
 
-  // ✅ Corregido - usa hora local en vez de UTC
   const ahora = new Date();
   const año = ahora.getFullYear();
   const mes = String(ahora.getMonth() + 1).padStart(2, "0");
